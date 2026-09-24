@@ -22,6 +22,34 @@ Run and manage multiple Nostr bot identities, post and reply, and operate a Data
 5. It polls the payment engine until the invoice is settled (or times out)
 6. Once paid, it runs the job through the configured LLM and publishes the result as a kind 6050 event
 
+Nostr Command Interface & DVM Infrastructure Roadmap
+Phase 1: Core Protocol & DVM Integration (Months 1–2)
+NIP-90 & NWC Standard Compliance: Solidify native Data Vending Machine (NIP-90) job request/response handlers with Nostr Wallet Connect (NWC) for automated payload settlement and micro-payments.
+
+Autonomous Telemetry & Event Ingestion: Expand real-time relay telemetry parsing (network event tracking, relay topology monitoring, and status feedback) into structured DVM inputs.
+
+Persona Engine Refinement: Harden local LLM provider integration (Gemini/Claude) with structured prompt-injection middleware for consistent, deterministic persona execution across network feeds.
+
+Open Source Release & Documentation: License core repo under MIT/Apache-2.0, publish standard setup guides, and document DVM job-kind handling for public contributors.
+
+Phase 2: Client Optimization & Multi-Platform Deployment (Months 3–4)
+Offline-First State & Storage: Implement local event caching and persistent state indexed DB storage to eliminate latency during high-volume relay polling.
+
+Desktop & PWA Native Packaging: Bundle client application via Electron and standalone PWA manifests for cross-platform desktop execution (Linux, macOS, Windows, ChromeOS).
+
+Multi-Relay Fallback Architecture: Build automatic relay failover, reconnection backoffs, and NWC connection pooling to preserve uptime during network partitions.
+
+Developer Tooling & CLI Utilities: Release standalone terminal/headless runners for autonomous DVM node operators.
+
+Phase 3: Network Hardening & Ecosystem Scaling (Months 5–6)
+Encrypted Event & File Payload Workflows: Integrate NIP-44/NIP-94 compliant payload handling for secure file sharing and end-to-end encrypted DVM job dispatch.
+
+DVM Marketplace & Dynamic Task Routing: Enable dynamic task discovery where client nodes automatically broadcast, discover, and bid on active DVM jobs across open relays.
+
+Community Security Audits & Benchmarking: Conduct public stress testing on persona context pipelines and publish performance benchmarks for DVM job completion.
+
+Public Documentation & Educational Content: Produce comprehensive developer tutorials, API specs, and integration guides to onboard third-party DVM service providers.
+
 ## Requirements
 
 - A modern browser (Chrome, Firefox, or Edge — the app uses native ES modules and dynamic `import()`, so no build step or server is needed for the frontend)
