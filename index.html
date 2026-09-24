@@ -1,0 +1,1967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nostr Identity Manager — Autonomous Enterprise Edition</title>
+    <style>
+        :root {
+            /* Default Theme: Professional (Steel/Corporate) */
+            --bg: #0f172a; 
+            --panel: #1e293b; 
+            --input-bg: #334155;
+            --border: #475569;
+            --accent: #38bdf8; 
+            --accent-hover: #0ea5e9;
+            --text: #f8fafc; 
+            --dim: #94a3b8;
+            --error: #ef4444; 
+            --error-hover: #dc2626;
+            --dvm-accent: #f59e0b; /* Specific highlight for DVM events */
+
+            /* Unified Enterprise Typography */
+            --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Courier New', monospace;
+        }
+
+        /* ---------------------------------
+           THEME DEFINITIONS
+           --------------------------------- */
+        .theme-terminal { --bg: #000000; --panel: #001100; --input-bg: #002200; --border: #00ff00; --accent: #00ff00; --accent-hover: #00cc00; --text: #00ff00; --dim: #00aa00; --error: #ff0000; --error-hover: #cc0000; --dvm-accent: #ffff00; }
+        .theme-cyberpunk { --bg: #0d0221; --panel: #17042a; --input-bg: #260742; --border: #00f0ff; --accent: #fcee0a; --accent-hover: #e0d309; --text: #ff003c; --dim: #a382b6; --error: #ff003c; --error-hover: #cc0030; --dvm-accent: #00ffcc; }
+        .theme-coffee { --bg: #241811; --panel: #36241a; --input-bg: #4a3224; --border: #593d2c; --accent: #d4a373; --accent-hover: #c08d5d; --text: #fefae0; --dim: #ccad93; --error: #e5989b; --error-hover: #d57a7e; --dvm-accent: #e9c46a; }
+        .theme-oxide { --bg: #1d1d1d; --panel: #2b2b2b; --input-bg: #3d3d3d; --border: #b85d19; --accent: #e07a26; --accent-hover: #c26113; --text: #e8e8e8; --dim: #a0a0a0; --error: #ff4a4a; --error-hover: #e03838; --dvm-accent: #f4a261; }
+        .theme-magma { --bg: #1a0a05; --panel: #291008; --input-bg: #3d170c; --border: #5c2412; --accent: #ff5500; --accent-hover: #cc4400; --text: #fff0e6; --dim: #cc8866; --error: #dc2626; --error-hover: #b91c1c; --dvm-accent: #ffcc00; }
+        .theme-gothic { --bg: #0d060f; --panel: #160b1a; --input-bg: #231229; --border: #3f1d47; --accent: #9a031e; --accent-hover: #720917; --text: #fb8b24; --dim: #9e768f; --error: #ff0000; --error-hover: #cc0000; --dvm-accent: #ffd166; }
+        .theme-synthwave { --bg: #1a0b2e; --panel: #241142; --input-bg: #311859; --border: #ff007f; --accent: #00e5ff; --accent-hover: #00b3cc; --text: #ffffff; --dim: #b399ff; --error: #ff3333; --error-hover: #e62e2e; --dvm-accent: #f9c80e; }
+        .theme-sakura { --bg: #fff0f5; --panel: #ffe4e1; --input-bg: #ffd1dc; --border: #ffb6c1; --accent: #ff1493; --accent-hover: #c71585; --text: #4a0e2e; --dim: #9e4b73; --error: #dc143c; --error-hover: #b01030; --dvm-accent: #ffb703; }
+        .theme-crimson { --bg: #110000; --panel: #1a0505; --input-bg: #2a0808; --border: #7f1d1d; --accent: #ef4444; --accent-hover: #dc2626; --text: #fee2e2; --dim: #f87171; --error: #ff0000; --error-hover: #cc0000; --dvm-accent: #fb8500; }
+        .theme-emerald { --bg: #022011; --panel: #04331c; --input-bg: #074b29; --border: #065f34; --accent: #10b981; --accent-hover: #059669; --text: #ecfdf5; --dim: #6ee7b7; --error: #ef4444; --error-hover: #dc2626; --dvm-accent: #fbbf24; }
+        .theme-ocean { --bg: #020c1b; --panel: #081931; --input-bg: #102a4e; --border: #1a4a86; --accent: #00e5ff; --accent-hover: #00b3cc; --text: #e0f7ff; --dim: #7dd3fc; --error: #f43f5e; --error-hover: #e11d48; --dvm-accent: #38bdf8; }
+        .theme-overdrive { --bg: #141517; --panel: #202226; --input-bg: #2d3036; --border: #40444d; --accent: #ffee00; --accent-hover: #d4c600; --text: #ffffff; --dim: #8a8f99; --error: #ff2a2a; --error-hover: #e62626; --dvm-accent: #00ffcc; }
+
+        /* ---------------------------------
+           CORE STRUCTURAL ELEMENTS
+           --------------------------------- */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body { 
+            background-color: var(--bg); 
+            color: var(--text); 
+            font-family: var(--font-sans); 
+            font-size: 14px;
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .layout-container, .top-bar { position: relative; z-index: 10; }
+
+        /* Header */
+        .top-bar { 
+            background-color: var(--panel); 
+            height: 60px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 0 24px; 
+            border-bottom: 1px solid var(--border); 
+            flex-shrink: 0; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .app-title { 
+            color: var(--accent); 
+            font-size: 16px; 
+            font-weight: 700; 
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .header-left, .header-right { display: flex; align-items: center; gap: 20px; }
+        
+        /* Layout Panels */
+        .layout-container { display: flex; flex: 1; overflow: hidden; padding: 16px; gap: 16px; }
+        .panel { 
+            background-color: var(--panel); 
+            border: 1px solid var(--border); 
+            display: flex; 
+            flex-direction: column; 
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .left-panel { width: 320px; flex-shrink: 0; padding: 16px; }
+        .center-panel { flex: 1; padding: 16px; }
+        .right-panel { width: 380px; flex-shrink: 0; padding: 16px; }
+        
+        .panel-header { 
+            color: var(--dim); 
+            font-weight: 600; 
+            font-size: 12px;
+            margin-bottom: 12px; 
+            text-transform: uppercase; 
+            letter-spacing: 1px; 
+            border-bottom: 1px solid var(--border); 
+            padding-bottom: 8px;
+        }
+
+        /* Scrollables */
+        .scrollable-container { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding-right: 8px; 
+            scrollbar-width: thin; 
+            scrollbar-color: var(--border) transparent; 
+        }
+        .scrollable-container::-webkit-scrollbar { width: 6px; }
+        .scrollable-container::-webkit-scrollbar-track { background: transparent; }
+        .scrollable-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        /* Form Controls */
+        .main-input, .main-textarea, .main-select { 
+            background-color: var(--input-bg); 
+            color: var(--text); 
+            border: 1px solid var(--border); 
+            padding: 10px 12px; 
+            font-family: var(--font-sans); 
+            font-size: 14px;
+            width: 100%; 
+            outline: none; 
+            border-radius: 6px; 
+            transition: all 0.2s;
+        }
+        .main-textarea { font-family: var(--font-mono); resize: vertical; min-height: 80px; }
+        .main-input:focus, .main-textarea:focus, .main-select:focus { 
+            border-color: var(--accent); 
+            box-shadow: 0 0 0 2px rgba(0,0,0,0.2); 
+        }
+        .search-input { margin-bottom: 12px; }
+        .code-font { font-family: var(--font-mono); font-size: 13px; white-space: pre-wrap; }
+
+        /* ---------------------------------
+           BUTTONS (Theme Compliant)
+           --------------------------------- */
+        .btn { 
+            font-family: var(--font-sans); 
+            font-weight: 600; 
+            font-size: 13px;
+            border: 1px solid transparent; 
+            padding: 8px 16px; 
+            cursor: pointer; 
+            border-radius: 6px; 
+            letter-spacing: 0.5px;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn:active { transform: translateY(1px); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .btn-primary { 
+            background-color: var(--accent); 
+            color: var(--bg);
+            border-color: var(--accent);
+        }
+        .btn-primary:hover:not(:disabled) { background-color: var(--accent-hover); border-color: var(--accent-hover); }
+        
+        .btn-secondary { 
+            background-color: var(--input-bg); 
+            color: var(--text); 
+            border-color: var(--border); 
+        }
+        .btn-secondary:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+        
+        .btn-danger { 
+            background-color: transparent; 
+            color: var(--error); 
+            border-color: var(--error); 
+        }
+        .btn-danger:hover:not(:disabled) { 
+            background-color: var(--error); 
+            color: var(--text);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+        .btn-outline:hover:not(:disabled) {
+            background-color: var(--accent);
+            color: var(--bg);
+        }
+        
+        .btn-dvm {
+            background-color: transparent;
+            color: var(--dvm-accent);
+            border-color: var(--dvm-accent);
+        }
+        .btn-dvm:hover:not(:disabled) {
+            background-color: var(--dvm-accent);
+            color: var(--bg);
+        }
+
+        /* ---------------------------------
+           TYPOGRAPHY & UTILITIES
+           --------------------------------- */
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .flex-shrink-0 { flex-shrink: 0; }
+        .mt-5 { margin-top: 5px; } .mt-10 { margin-top: 10px; } .mt-15 { margin-top: 15px; } .mt-20 { margin-top: 20px; }
+        .mb-5 { margin-bottom: 5px; } .mb-10 { margin-bottom: 10px; }
+        .ml-5 { margin-left: 5px; } .ml-10 { margin-left: 10px; } .ml-auto { margin-left: auto; }
+        
+        .dim-text { color: var(--dim); font-size: 13px; }
+        .accent-text { color: var(--accent); }
+        .error-text { color: var(--error); }
+        .dvm-text { color: var(--dvm-accent); }
+        .italic { font-style: italic; }
+
+        .settings-label { 
+            font-size: 12px; 
+            color: var(--dim); 
+            margin-bottom: 6px; 
+            display: block; 
+            letter-spacing: 0.5px; 
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        /* ---------------------------------
+           COMPONENT SPECIFICS
+           --------------------------------- */
+        
+        /* Bot Cards */
+        .bot-card { 
+            background-color: var(--input-bg); 
+            cursor: pointer; 
+            padding: 12px; 
+            margin-bottom: 10px; 
+            border-radius: 6px; 
+            border: 1px solid var(--border); 
+            transition: all 0.2s;
+            position: relative;
+        }
+        .bot-card:hover { border-color: var(--accent); }
+        .bot-card.selected { 
+            background-color: var(--bg); 
+            border-color: var(--accent); 
+            box-shadow: inset 2px 0 0 var(--accent); 
+        }
+        .bot-header { display: flex; justify-content: space-between; align-items: center; font-size: 14px; margin-bottom: 6px; }
+        .bot-id { color: var(--text); font-weight: 700; text-transform: uppercase; }
+        .bot-stats { font-size: 12px; color: var(--dim); margin-bottom: 6px; }
+        .bot-chars { font-size: 12px; color: var(--text); font-style: italic; margin-bottom: 6px; line-height: 1.4; opacity: 0.9;}
+        .bot-npub { font-size: 11px; color: var(--dim); word-break: break-all; font-family: var(--font-mono); }
+        
+        .bot-del-icon {
+            background: transparent;
+            border: none;
+            color: var(--dim);
+            cursor: pointer;
+            font-size: 14px;
+            padding: 4px;
+            border-radius: 4px;
+            transition: color 0.2s;
+        }
+        .bot-del-icon:hover { color: var(--error); }
+
+        /* Center Panel Tabs & Banners */
+        .active-banner { 
+            background-color: var(--input-bg); 
+            padding: 16px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between;
+            margin-bottom: 16px; 
+            border-radius: 6px; 
+            border: 1px solid var(--border); 
+        }
+        
+        .tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+        .tab-link { 
+            flex: 1; background-color: transparent; color: var(--dim); padding: 10px 5px; border: none; 
+            cursor: pointer; font-weight: 600; font-family: var(--font-sans); font-size: 12px;
+            border-bottom: 2px solid transparent; transition: all 0.2s; text-align: center;
+        }
+        .tab-link:hover { color: var(--text); }
+        .tab-link.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
+        
+        .tab-content { display: none; flex-direction: column; height: 100%; }
+        .tab-content.active { display: flex; }
+        
+        .tab-content-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* Note Cards & History Data */
+        .note-card { 
+            background-color: var(--input-bg); 
+            padding: 16px; 
+            margin-bottom: 12px; 
+            border-radius: 6px; 
+            border: 1px solid var(--border); 
+            border-left: 3px solid var(--accent);
+        }
+        .dvm-card {
+            border-left: 3px solid var(--dvm-accent);
+        }
+        .note-header { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 10px; }
+        .note-author { color: var(--text); font-weight: 700; }
+        .note-body { font-size: 14px; margin-bottom: 14px; line-height: 1.6; word-break: break-word; color: var(--text); }
+        
+        .history-parent-quote {
+            background-color: var(--bg);
+            border-left: 2px solid var(--dim);
+            padding: 10px 14px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            color: var(--text);
+            border-radius: 0 4px 4px 0;
+            line-height: 1.5;
+        }
+        .parent-text { font-style: italic; opacity: 0.85; display: block; margin-top: 4px; }
+
+        /* Right Panel Event Logs & Config */
+        .config-box { 
+            border: 1px solid var(--border); 
+            padding: 16px; 
+            margin-bottom: 16px; 
+            border-radius: 6px; 
+            background: var(--input-bg); 
+        }
+        .config-box legend { color: var(--dim); font-size: 12px; font-weight: 700; padding: 0 8px; text-transform: uppercase; }
+        
+        .log-container { 
+            background-color: var(--input-bg); 
+            padding: 12px; 
+            font-size: 12px; 
+            border-radius: 6px; 
+            flex: 1; 
+            word-wrap: break-word; 
+            border: 1px solid var(--border); 
+            font-family: var(--font-mono);
+        }
+        .log-line { margin-bottom: 8px; line-height: 1.5; border-bottom: 1px solid var(--border); padding-bottom: 6px;}
+        .log-line:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .log-ts { color: var(--dim); font-size: 11px;}
+        .log-bot { color: var(--text); font-weight: 700;}
+        
+        /* Unified Theme Tags */
+        .log-tag { 
+            font-size: 10px; 
+            padding: 2px 6px; 
+            border: 1px solid var(--accent); 
+            color: var(--accent); 
+            background: transparent;
+            border-radius: 4px; 
+            margin: 0 6px; 
+            display: inline-block;
+            font-weight: 700;
+        }
+        .tag-ERROR { border-color: var(--error); color: var(--error); }
+        .tag-INFO { border-color: var(--dim); color: var(--dim); }
+        .tag-DVM { border-color: var(--dvm-accent); color: var(--dvm-accent); }
+
+        .status-badge { 
+            font-size: 11px; 
+            padding: 4px 8px; 
+            border-radius: 4px; 
+            border: 1px solid; 
+            display: inline-block; 
+            margin-left: 10px;
+            font-weight: 700;
+        }
+        .badge-on { color: var(--accent); border-color: var(--accent); }
+        .badge-off { color: var(--dim); border-color: var(--dim); }
+        .badge-dvm { color: var(--dvm-accent); border-color: var(--dvm-accent); }
+
+        /* Status Indicator in Header */
+        .header-status { font-weight: 700; font-size: 12px; letter-spacing: 0.5px; }
+
+        /* Theming Dropdown Custom Style */
+        .theme-selector {
+            background-color: var(--input-bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: var(--font-sans);
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* DVM Status Inject Area */
+        .dvm-status-area {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed var(--border);
+            display: none;
+        }
+        .dvm-status-area.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="theme-professional">
+    <header class="top-bar">
+        <div class="header-left">
+            <span class="app-title">Nostr Identity Manager</span>
+            <span class="dim-text ml-10">v3.2 AUTONOMOUS ENTERPRISE + DVM HUB</span>
+        </div>
+        <div class="header-right">
+            <select id="theme-selector" class="theme-selector">
+                <option value="theme-professional">Professional Theme</option>
+                <option value="theme-terminal">Terminal Theme</option>
+                <option value="theme-cyberpunk">Cyberpunk Theme</option>
+                <option value="theme-coffee">Coffee Theme</option>
+                <option value="theme-oxide">Oxide Theme</option>
+                <option value="theme-magma">Magma Theme</option>
+                <option value="theme-gothic">Gothic Theme</option>
+                <option value="theme-synthwave">Synthwave Theme</option>
+                <option value="theme-sakura">Sakura Theme</option>
+                <option value="theme-crimson">Crimson Theme</option>
+                <option value="theme-emerald">Emerald Theme</option>
+                <option value="theme-ocean">Ocean Theme</option>
+                <option value="theme-overdrive">Overdrive Theme</option>
+            </select>
+            <span id="replied-lbl" class="dim-text" style="font-family: var(--font-mono);">Cache: 0 events</span>
+            <span id="status-lbl" class="header-status accent-text">INITIALIZING SYSTEMS...</span>
+        </div>
+    </header>
+
+    <div class="layout-container">
+        
+        <aside class="panel left-panel">
+            <div class="panel-header">IDENTITY ROSTER</div>
+            <input type="text" id="bot-search" class="main-input search-input" placeholder="Query identities...">
+            <div id="bot-list" class="scrollable-container"></div>
+        </aside>
+
+        <main class="panel center-panel">
+            <div class="active-banner">
+                <div>
+                    <span class="dim-text" style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">ACTIVE FOCUS TARGET</span>
+                    <span id="active-bot-display" class="accent-text" style="font-weight: 700; font-size: 16px; letter-spacing: 0.5px;">AWAITING SELECTION</span>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <button class="tab-link active" data-tab="tab-compose">COMPOSE</button>
+                <button class="tab-link" data-tab="tab-reply">REPLY</button>
+                <button class="tab-link" data-tab="tab-feed">NETWORK FEED</button>
+                <button class="tab-link" data-tab="tab-mentions">MENTIONS</button>
+                <button class="tab-link" data-tab="tab-dvm">DVM HUB</button>
+                <button class="tab-link" data-tab="tab-wallet">WALLET</button>
+                <button class="tab-link" data-tab="tab-autonomy">AUTOPILOT</button>
+                <button class="tab-link" data-tab="tab-history">TELEMETRY</button>
+                <button class="tab-link" data-tab="tab-manage">SETTINGS</button>
+            </div>
+
+            <div class="tab-content-container">
+                
+                <div id="tab-compose" class="tab-content active scrollable-container">
+                    <span class="settings-label">MANUAL PAYLOAD DRAFT</span>
+                    <textarea id="compose-txt" class="main-textarea" rows="8" placeholder="Enter raw string payload or synthesize via LLM..."></textarea>
+                    <div class="flex-between dim-text mb-10 mt-5">
+                        <span id="char-count-lbl" style="font-family: var(--font-mono);">0 bytes</span>
+                        <span>Links stripped pre-flight</span>
+                    </div>
+                    <div class="action-row flex-between">
+                        <div>
+                            <button id="btn-clear-compose" class="btn btn-secondary">CLEAR BUFFER</button>
+                            <button id="btn-ai-compose" class="btn btn-outline ml-10">SYNTHESIZE DRAFT</button>
+                        </div>
+                        <button id="btn-post" class="btn btn-primary">BROADCAST PAYLOAD</button>
+                    </div>
+                </div>
+
+                <div id="tab-reply" class="tab-content scrollable-container">
+                    <span class="settings-label">TARGET EVENT ID (HEX / NOTE1)</span>
+                    <input type="text" id="reply-id-ent" class="main-input mb-10" placeholder="Target identifier...">
+                    
+                    <div id="reply-ctx-lbl" class="italic mb-10" style="padding: 12px; background: var(--bg); border-left: 3px solid var(--accent); border-radius: 4px; display: none; color: var(--text); font-size: 13px;"></div>
+                    
+                    <span class="settings-label mt-10">RESPONSE PAYLOAD</span>
+                    <textarea id="reply-txt" class="main-textarea" rows="6" placeholder="Formulate response payload..."></textarea>
+                    <div class="action-row flex-between mt-10">
+                        <div>
+                            <button id="btn-clear-reply" class="btn btn-secondary">CLEAR BUFFER</button>
+                            <button id="btn-ai-reply" class="btn btn-outline ml-10">SYNTHESIZE RESPONSE</button>
+                        </div>
+                        <button id="btn-reply" class="btn btn-primary">TRANSMIT REPLY</button>
+                    </div>
+                </div>
+
+                <div id="tab-feed" class="tab-content scrollable-container">
+                    <div class="action-row mb-10 flex-between">
+                        <div class="flex-between">
+                            <span class="dim-text mr-10 font-weight-600">Sample Size:</span>
+                            <input type="number" id="feed-limit-var" class="main-input" value="15" style="width: 80px; text-align: center;">
+                            <button id="btn-fetch-feed" class="btn btn-outline ml-10">SCAN GLOBAL TOPOLOGY</button>
+                        </div>
+                        <span class="dim-text ml-10">(Self-nodes ignored)</span>
+                    </div>
+                    <div id="feed-container" class="notes-container flex-1 overflow-y-auto pr-2"></div>
+                </div>
+
+                <div id="tab-mentions" class="tab-content scrollable-container">
+                    <div class="action-row mb-10">
+                        <button id="btn-check-mentions" class="btn btn-outline">FETCH PENDING MENTIONS (FOCUS TARGET)</button>
+                    </div>
+                    <div id="mentions-container" class="notes-container flex-1 overflow-y-auto pr-2"></div>
+                </div>
+
+                <!-- DVM HUB TAB -->
+                <div id="tab-dvm" class="tab-content scrollable-container">
+                    <div style="background: var(--bg); border: 1px solid var(--border); padding: 20px; border-radius: 6px; margin-bottom: 24px;">
+                        <div class="flex-between mb-10">
+                            <div>
+                                <span class="settings-label" style="display: inline; font-size: 14px;">DATA VENDING MACHINE (NIP-90)</span>
+                            </div>
+                            <button id="btn-scan-dvm" class="btn btn-dvm">SCAN OPEN JOB QUEUE</button>
+                        </div>
+                        <p class="dim-text" style="line-height: 1.5;">
+                            Monitor the topology for Open Text/Synthesis Jobs (Kind 5050). The swarm can intercept these requests, request a Lightning invoice via paymentengine.py, broadcast a Feedback Event (Kind 7000), await settlement, and finally deploy a Result Event (Kind 6050) referencing the original job.
+                        </p>
+                    </div>
+                    <div id="dvm-container" class="notes-container flex-1 overflow-y-auto pr-2"></div>
+                </div>
+
+                <!-- WALLET TAB -->
+                <div id="tab-wallet" class="tab-content scrollable-container">
+                    <div style="background: var(--bg); border: 1px solid var(--border); padding: 20px; border-radius: 6px; margin-bottom: 24px;">
+                        <div class="flex-between mb-10">
+                            <div>
+                                <span class="settings-label" style="display: inline; font-size: 14px;">LIGHTNING WALLET (ALBY / NWC)</span>
+                                <span id="wallet-status-badge" class="status-badge badge-off">DISCONNECTED</span>
+                            </div>
+                            <button id="btn-wallet-disconnect" class="btn btn-secondary" style="padding:6px 12px; font-size:11px;">DISCONNECT</button>
+                        </div>
+                        <p id="wallet-info-line" class="dim-text mb-10" style="line-height: 1.5; font-size: 11px;"></p>
+                        <p class="dim-text mb-10" style="line-height: 1.5;">
+                            Connect an Alby wallet via Nostr Wallet Connect (NWC) to check balance and generate Lightning invoices for paid DVM jobs.
+                        </p>
+                        <p class="dim-text mb-10" style="line-height: 1.5; font-size: 11px;">
+                            ⚠ The connection string grants wallet access and is stored unencrypted in this browser's local storage. Only use this on a trusted device.
+                        </p>
+                        <span class="settings-label">NWC CONNECTION STRING</span>
+                        <input type="password" id="wallet-nwc-url" class="main-input mb-10" placeholder="nostr+walletconnect://...">
+                        <div class="action-row">
+                            <button id="btn-wallet-save" class="btn btn-secondary">SAVE CONNECTION</button>
+                            <button id="btn-wallet-connect" class="btn btn-outline ml-10">TEST / CONNECT</button>
+                        </div>
+                    </div>
+
+                    <div style="background: var(--bg); border: 1px solid var(--border); padding: 20px; border-radius: 6px; margin-bottom: 24px;">
+                        <div class="flex-between mb-10">
+                            <span class="settings-label" style="display: inline; font-size: 14px; margin: 0;">WALLET BALANCE</span>
+                            <span id="wallet-balance-val" class="accent-text" style="font-weight:700; font-size: 16px;">— sats</span>
+                        </div>
+                        <p id="wallet-balance-updated" class="dim-text mb-10" style="font-size: 11px;"></p>
+                        <button id="btn-wallet-balance" class="btn btn-primary" style="width:100%;">CHECK BALANCE</button>
+                    </div>
+
+                    <div style="background: var(--bg); border: 1px solid var(--border); padding: 20px; border-radius: 6px;">
+                        <span class="settings-label" style="font-size: 14px;">CREATE INVOICE</span>
+                        <div class="flex-between mt-10" style="gap: 10px; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <span class="settings-label">AMOUNT (SATS)</span>
+                                <input type="number" id="wallet-invoice-amount" class="main-input" placeholder="1000" min="1" step="1">
+                            </div>
+                            <div style="flex: 2;">
+                                <span class="settings-label">DESCRIPTION (OPTIONAL)</span>
+                                <input type="text" id="wallet-invoice-memo" class="main-input" placeholder="Payment for DVM job...">
+                            </div>
+                        </div>
+                        <div class="action-row mt-10">
+                            <button id="btn-wallet-invoice" class="btn btn-primary" style="width:100%;">GENERATE INVOICE</button>
+                        </div>
+                        <div id="wallet-invoice-output-wrap" style="display:none; margin-top:16px;">
+                            <span class="settings-label">BOLT11 INVOICE</span>
+                            <textarea id="wallet-invoice-output" class="main-textarea code-font" rows="4" readonly></textarea>
+                            <button id="btn-wallet-copy-invoice" class="btn btn-secondary mt-10" style="width:100%;">COPY TO CLIPBOARD</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-autonomy" class="tab-content scrollable-container">
+                    <div style="background: var(--bg); border: 1px solid var(--border); padding: 20px; border-radius: 6px; margin-bottom: 24px;">
+                        <div class="flex-between mb-10">
+                            <div>
+                                <span class="settings-label" style="display: inline; font-size: 14px;">SWARM AUTOPILOT MODULE</span>
+                                <span id="auto-status-badge" class="status-badge badge-off">SUSPENDED</span>
+                            </div>
+                            <div>
+                                <button id="btn-auto-start" class="btn btn-primary">ACTIVATE</button>
+                                <button id="btn-auto-stop" class="btn btn-danger ml-5">SUSPEND</button>
+                            </div>
+                        </div>
+                        <p class="dim-text mb-10" style="line-height: 1.5;">
+                            When active, the system autonomously iterates through the identity roster at the defined interval, executing contextual scans and deploying LLM-synthesized payloads to the Nostr topology.
+                        </p>
+                        <div class="flex-between mt-20">
+                            <span class="settings-label" style="margin: 0;">EXECUTION INTERVAL</span>
+                            <select id="auto-interval-sel" class="main-select" style="width: 250px;">
+                                <option value="900000">CONSERVATIVE (15 Minutes)</option>
+                                <option value="300000" selected>STANDARD (5 Minutes)</option>
+                                <option value="120000">AGGRESSIVE (2 Minutes)</option>
+                                <option value="60000">MAXIMUM (1 Minute)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mt-15" style="border-top: 1px dashed var(--border); padding-top: 15px;">
+                            <label style="display: flex; align-items: center; cursor: pointer;">
+                                <input type="checkbox" id="chk-dvm-auto" style="margin-right: 10px; width: 16px; height: 16px;">
+                                <span class="dim-text" style="font-weight: 600; color: var(--text);">Enable DVM Auto-Bidding (Intercepts Kind 5050 Jobs during tick)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <span class="settings-label">GLOBAL SYSTEM BASE PROMPT</span>
+                    <p class="dim-text mb-5" style="font-size: 11px;">Foundational instructions injected into all LLM generation contexts.</p>
+                    <textarea id="prompt-base-txt" class="main-textarea mb-10" rows="4">You are an entity first and foremost. You use natural language, avoid hashtags, and do not sound like a generic assistant. Base your interactions firmly in your defined persona.</textarea>
+
+                    <span class="settings-label mt-10">ACTIVE OVERRIDE DIRECTIVE</span>
+                    <p class="dim-text mb-5" style="font-size: 11px;">Immediate high-priority topical instruction used to steer current swarm narrative.</p>
+                    <textarea id="prompt-directive-txt" class="main-textarea mb-10" rows="3" placeholder="e.g. Discuss current market conditions, maintain extreme skepticism, output highly logical analysis..."></textarea>
+                    
+                    <div class="action-row mt-10">
+                        <button id="btn-save-prompts" class="btn btn-secondary" style="width: 100%;">COMMIT PROMPT CONFIGURATION</button>
+                    </div>
+                </div>
+
+                <div id="tab-history" class="tab-content scrollable-container">
+                    <div class="action-row mb-10 flex-between">
+                        <span class="settings-label" style="margin-bottom: 0;">DEPLOYMENT TELEMETRY ARCHIVE</span>
+                        <button id="btn-clear-history" class="btn btn-danger" style="padding: 6px 12px; font-size: 11px;">PURGE ARCHIVE</button>
+                    </div>
+                    <div id="history-container" class="notes-container flex-1 overflow-y-auto pr-2"></div>
+                </div>
+
+                <div id="tab-manage" class="tab-content scrollable-container">
+                    <p class="dim-text mb-10">Manage cryptographic identities. Paste raw JSON array to import, or generate automatically.</p>
+                    <textarea id="manage-bots-txt" class="main-textarea code-font" rows="12"></textarea>
+                    <div class="action-row mt-15 flex-between">
+                        <button id="btn-export-bots" class="btn btn-secondary">EXPORT SECURE JSON</button>
+                        <div>
+                            <button id="btn-generate-bot" class="btn btn-outline">PROVISION NEW IDENTITY</button>
+                            <button id="btn-generate-ai-bot" class="btn btn-outline ml-5">SYNTHESIZE AI IDENTITY</button>
+                        </div>
+                        <button id="btn-save-bots" class="btn btn-primary">APPLY MANIFEST</button>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <aside class="panel right-panel">
+            <fieldset class="config-box">
+                <legend>LLM INTEGRATION</legend>
+                <input type="password" id="api-key-ent" class="main-input" placeholder="Enter Gemini API Key...">
+                <div class="mt-10"><button id="btn-save-api" class="btn btn-secondary" style="width:100%">SECURE API KEY</button></div>
+            </fieldset>
+
+            <div class="panel-header mt-10">SYSTEM EVENT LOG</div>
+            <div id="event-log" class="log-container scrollable-container"></div>
+            <button id="btn-clear-log" class="btn btn-secondary mt-10" style="width: 100%;">FLUSH LOG DATA</button>
+
+            <fieldset class="config-box mt-15 flex-shrink-0">
+                <legend>RELAY TOPOLOGY</legend>
+                <select id="relay-listbox" size="3" class="main-input" style="height: 80px; font-family: var(--font-mono); font-size: 12px;"></select>
+                <div class="flex-between mt-10">
+                    <input type="text" id="relay-add-ent" class="main-input" value="wss://..." style="flex-grow:1; margin-right:8px;">
+                    <button id="btn-add-relay" class="btn btn-secondary" style="padding:8px 14px;">+</button>
+                    <button id="btn-remove-relay" class="btn btn-danger ml-5" style="padding:8px 14px;">−</button>
+                </div>
+            </fieldset>
+        </aside>
+
+    </div>
+
+    <script type="module">
+        import { SimplePool, finalizeEvent, nip19, getPublicKey, generateSecretKey } from 'https://cdn.jsdelivr.net/npm/nostr-tools@2.7.0/+esm';
+
+        // Set initial load status
+        document.getElementById('status-lbl').textContent = "SYSTEMS ONLINE";
+        document.getElementById('status-lbl').className = "header-status accent-text"; 
+
+        const STATE = {
+            bots: {}, 
+            activeBotId: null,
+            relays: ["wss://relay.damus.io", "wss://nos.lol", "wss://relay.nostr.band", "wss://relay.mostr.pub"],
+            repliedEvents: {}, 
+            xpTrackedEvents: {}, 
+            publishedHistory: [], 
+            apiKey: "", 
+            pool: new SimplePool(),
+            wallet: {
+                nwcUrl: "",              
+                client: null,            
+                connected: false,        
+                connecting: false,
+                supportedMethods: [],    
+                walletAlias: null,
+                lastBalance: null,       
+                lastBalanceAt: null      
+            },
+            autoPilot: {
+                enabled: false,
+                intervalMs: 300000,
+                timerId: null,
+                basePrompt: "You are an entity first and foremost. You use natural language, avoid hashtags, and do not sound like a generic assistant. Base your interactions firmly in your defined persona.",
+                directive: "",
+                dvmEnabled: false
+            }
+        };
+
+        const $ = id => document.getElementById(id);
+
+        // --- EXP & LEVELING ENGINE ---
+        function getBotLevel(xp) {
+            return Math.floor(Math.sqrt((xp || 0) / 10)) + 1;
+        }
+
+        function awardXP(botId, eventId, amount = 10) {
+            if (STATE.xpTrackedEvents[eventId]) return false;
+
+            if (STATE.bots[botId].xp === undefined) STATE.bots[botId].xp = 0;
+            
+            const oldLevel = getBotLevel(STATE.bots[botId].xp);
+            STATE.bots[botId].xp += amount;
+            const newLevel = getBotLevel(STATE.bots[botId].xp);
+
+            STATE.xpTrackedEvents[eventId] = true;
+            
+            const keys = Object.keys(STATE.xpTrackedEvents);
+            if (keys.length > 5000) delete STATE.xpTrackedEvents[keys[0]];
+            
+            localStorage.setItem('swarm_xp_tracked', JSON.stringify(STATE.xpTrackedEvents));
+            saveBots();
+
+            if (newLevel > oldLevel) {
+                logEvent("INFO", botId, `LEVEL UP! Identity has reached Level ${newLevel}.`);
+            }
+            return true;
+        }
+
+        function logEvent(level, bot, message) {
+            const logContainer = $('event-log');
+            const ts = new Date().toLocaleTimeString('en-US', { hour12: false });
+            const div = document.createElement('div');
+            div.className = 'log-line';
+            
+            let contentHtml = `<span class="log-ts">[${ts}]</span> <span class="log-tag tag-${level}">${level}</span> <span class="log-bot">${bot}</span><br/>`;
+            if (level === 'LINK') {
+                contentHtml += `<a href="${message}" target="_blank" class="accent-text" style="text-decoration: none; font-size: 11px;">► Inspect on Nostr</a>`;
+            } else {
+                contentHtml += `<span style="color: var(--dim); font-size: 12px;">${message.replace(/</g, '&lt;')}</span>`;
+            }
+            
+            div.innerHTML = contentHtml;
+            logContainer.appendChild(div);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function setBusy(isBusy, label = "PROCESSING...") {
+            const lbl = $('status-lbl');
+            lbl.textContent = isBusy ? label : "SYSTEMS STANDBY";
+            lbl.className = isBusy ? "header-status dim-text" : "header-status accent-text";
+        }
+
+        const NWC_HANDSHAKE_TIMEOUT_MS = 20000; 
+        const NWC_REQUEST_TIMEOUT_MS = 20000;   
+        const NWC_MAX_RETRIES = 2;              
+        const NWC_RETRY_BASE_DELAY_MS = 1500;   
+
+        let _NWCClientClass = null; 
+
+        async function loadAlbySDK() {
+            if (_NWCClientClass) return _NWCClientClass;
+
+            const SDK_VERSION = "3.7.1";
+            const sources = [
+                `https://esm.sh/@getalby/sdk@${SDK_VERSION}/nwc`,
+                `https://esm.sh/@getalby/sdk@${SDK_VERSION}`,
+                `https://cdn.jsdelivr.net/npm/@getalby/sdk@${SDK_VERSION}/nwc/+esm`,
+                `https://cdn.jsdelivr.net/npm/@getalby/sdk@${SDK_VERSION}/+esm`
+            ];
+
+            let lastErr = null;
+            for (const url of sources) {
+                try {
+                    const mod = await import(url);
+                    const ClientClass = mod.NWCClient || (mod.nwc && mod.nwc.NWCClient) || mod.default?.NWCClient;
+                    if (typeof ClientClass !== 'function') {
+                        throw new Error("Module loaded but NWCClient export was not found.");
+                    }
+                    _NWCClientClass = ClientClass;
+                    logEvent("WALLET", "SYSTEM", `Alby SDK loaded from ${url}`);
+                    return ClientClass;
+                } catch (e) {
+                    lastErr = e;
+                    logEvent("ERROR", "WALLET", `SDK source failed (${url}): ${formatWalletError(e)}`);
+                }
+            }
+            throw new Error(`Unable to load Alby SDK from any CDN source. Last error: ${lastErr ? formatWalletError(lastErr) : 'unknown'}`);
+        }
+
+        function formatWalletError(e) {
+            if (!e) return "Unknown error";
+            if (typeof e === 'string') return e;
+            if (e.message) return e.code ? `${e.message} (${e.code})` : e.message;
+            if (e.error && e.error.message) return e.error.code ? `${e.error.message} (${e.error.code})` : e.error.message;
+            try { return JSON.stringify(e); } catch (_) { return String(e); }
+        }
+
+        function validateNwcUrl(rawUrl) {
+            if (!rawUrl || typeof rawUrl !== 'string') return { valid: false, error: "Connection string is empty." };
+            const trimmed = rawUrl.trim();
+            if (!/^nostr\+?walletconnect:\/\//i.test(trimmed)) {
+                return { valid: false, error: "Must start with nostr+walletconnect://" };
+            }
+            try {
+                const normalized = trimmed.replace(/^nostr\+?walletconnect:\/\//i, 'https://');
+                const parsed = new URL(normalized);
+                const pubkey = (parsed.hostname || parsed.pathname.replace(/^\//, '')).toLowerCase();
+                if (!/^[0-9a-f]{64}$/.test(pubkey)) {
+                    return { valid: false, error: "Wallet pubkey must be 64 hex characters." };
+                }
+                const relay = parsed.searchParams.get('relay');
+                const secret = parsed.searchParams.get('secret');
+                if (!relay) return { valid: false, error: "Missing relay= parameter." };
+                if (!/^wss?:\/\//i.test(relay)) return { valid: false, error: "relay= must be a ws:// or wss:// URL." };
+                if (!secret || !/^[0-9a-f]{64}$/i.test(secret)) {
+                    return { valid: false, error: "Missing or invalid secret= parameter (must be 64 hex characters)." };
+                }
+                return { valid: true };
+            } catch (e) {
+                return { valid: false, error: `Malformed connection string: ${e.message}` };
+            }
+        }
+
+        function withTimeout(promise, ms, timeoutMessage) {
+            let timer;
+            const timeout = new Promise((_, reject) => {
+                timer = setTimeout(() => reject(new Error(timeoutMessage)), ms);
+            });
+            return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+        }
+
+        function updateWalletStatusUI() {
+            const badge = $('wallet-status-badge');
+            if (!badge) return;
+            if (STATE.wallet.connecting) {
+                badge.textContent = "CONNECTING…";
+                badge.className = "status-badge badge-dvm";
+            } else if (STATE.wallet.connected) {
+                badge.textContent = "CONNECTED";
+                badge.className = "status-badge badge-on";
+            } else {
+                badge.textContent = "DISCONNECTED";
+                badge.className = "status-badge badge-off";
+            }
+
+            const infoLine = $('wallet-info-line');
+            if (infoLine) {
+                if (STATE.wallet.connected) {
+                    const methods = STATE.wallet.supportedMethods || [];
+                    const hasBalance = methods.includes('get_balance');
+                    const hasInvoice = methods.includes('make_invoice');
+                    const alias = STATE.wallet.walletAlias ? `"${STATE.wallet.walletAlias}" — ` : '';
+                    let warn = '';
+                    if (!hasBalance || !hasInvoice) {
+                        const missing = [!hasBalance && 'get_balance', !hasInvoice && 'make_invoice'].filter(Boolean).join(' + ');
+                        warn = ` ⚠ this connection is NOT authorized for ${missing} — those requests will always time out until you re-authorize it in Alby.`;
+                    }
+                    infoLine.innerHTML = `${alias}supports: ${methods.length ? methods.join(', ') : 'unknown (wallet returned no method list)'}${warn ? `<br><span style="color: var(--error);">${warn}</span>` : ''}`;
+                } else {
+                    infoLine.textContent = '';
+                }
+            }
+
+            if (STATE.wallet.lastBalanceAt) {
+                const el = $('wallet-balance-updated');
+                if (el) el.textContent = `Last checked: ${new Date(STATE.wallet.lastBalanceAt).toLocaleTimeString('en-US', { hour12: false })}`;
+            }
+        }
+
+        function resetWalletConnection() {
+            if (STATE.wallet.client) {
+                try { STATE.wallet.client.close(); } catch (e) { /* already closed / never opened */ }
+            }
+            STATE.wallet.client = null;
+            STATE.wallet.connected = false;
+            STATE.wallet.supportedMethods = [];
+            STATE.wallet.walletAlias = null;
+            updateWalletStatusUI();
+        }
+
+        async function ensureWalletConnected(forceReconnect = false) {
+            if (STATE.wallet.connected && STATE.wallet.client && !forceReconnect) {
+                return STATE.wallet.client;
+            }
+
+            if (STATE.wallet.connecting) {
+                while (STATE.wallet.connecting) {
+                    await new Promise(r => setTimeout(r, 150));
+                }
+                if (STATE.wallet.connected && STATE.wallet.client && !forceReconnect) {
+                    return STATE.wallet.client;
+                }
+            }
+
+            const check = validateNwcUrl(STATE.wallet.nwcUrl);
+            if (!check.valid) {
+                throw new Error(`Invalid NWC connection string: ${check.error}`);
+            }
+
+            STATE.wallet.connecting = true;
+            updateWalletStatusUI();
+            try {
+                resetWalletConnection();
+
+                const NWCClient = await loadAlbySDK();
+                const client = new NWCClient({ nostrWalletConnectUrl: STATE.wallet.nwcUrl });
+
+                const info = await withTimeout(
+                    client.getInfo(),
+                    NWC_HANDSHAKE_TIMEOUT_MS,
+                    `Wallet did not respond to the initial handshake (get_info) within ${(NWC_HANDSHAKE_TIMEOUT_MS / 1000).toFixed(0)}s. The relay accepted the connection, but the wallet service behind it never answered — check that the wallet app / Alby Hub is online, and that this NWC connection hasn't been revoked.`
+                );
+
+                STATE.wallet.client = client;
+                STATE.wallet.connected = true;
+                STATE.wallet.supportedMethods = Array.isArray(info?.methods) ? info.methods : [];
+                STATE.wallet.walletAlias = info?.alias || null;
+
+                logEvent("WALLET", "SYSTEM", `Wallet handshake OK${info?.alias ? ` (${info.alias})` : ''}. Supported methods: ${STATE.wallet.supportedMethods.join(', ') || 'none reported'}.`);
+                if (!STATE.wallet.supportedMethods.includes('get_balance')) {
+                    logEvent("ERROR", "WALLET", "This connection is NOT authorized for get_balance — checking balance will always time out. Re-authorize the NWC connection in Alby with that permission enabled.");
+                }
+                if (!STATE.wallet.supportedMethods.includes('make_invoice')) {
+                    logEvent("ERROR", "WALLET", "This connection is NOT authorized for make_invoice — creating invoices will always time out. Re-authorize the NWC connection in Alby with that permission enabled.");
+                }
+
+                return client;
+            } catch (e) {
+                STATE.wallet.client = null;
+                STATE.wallet.connected = false;
+                throw e;
+            } finally {
+                STATE.wallet.connecting = false;
+                updateWalletStatusUI();
+            }
+        }
+
+        async function executeWalletRequest(operationName, requestFn) {
+            let attempt = 0;
+            let lastError;
+            while (attempt <= NWC_MAX_RETRIES) {
+                try {
+                    const client = await ensureWalletConnected(attempt > 0);
+                    const result = await withTimeout(
+                        requestFn(client),
+                        NWC_REQUEST_TIMEOUT_MS,
+                        `${operationName} timed out after ${(NWC_REQUEST_TIMEOUT_MS / 1000).toFixed(0)}s — the wallet service did not respond in time.`
+                    );
+                    return result;
+                } catch (e) {
+                    lastError = e;
+                    attempt++;
+                    resetWalletConnection();
+
+                    if (attempt > NWC_MAX_RETRIES) break;
+
+                    const delay = NWC_RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1);
+                    logEvent("WALLET", "SYSTEM", `${operationName} failed (attempt ${attempt}/${NWC_MAX_RETRIES + 1}): ${formatWalletError(e)} — retrying in ${(delay / 1000).toFixed(1)}s...`);
+                    await new Promise(r => setTimeout(r, delay));
+                }
+            }
+            throw lastError;
+        }
+
+        async function checkWalletBalance() {
+            setBusy(true, "CHECKING WALLET BALANCE");
+            logEvent("WALLET", "SYSTEM", "Requesting balance via NWC get_balance...");
+            try {
+                await ensureWalletConnected();
+                if (!STATE.wallet.supportedMethods.includes('get_balance')) {
+                    throw new Error("This NWC connection is not authorized for get_balance (see supported-methods line above). Re-authorize it in Alby's Connected Apps settings.");
+                }
+
+                const result = await executeWalletRequest("get_balance", (client) => client.getBalance());
+                const balanceMsat = typeof result?.balance === 'number' ? result.balance : 0;
+                const sats = Math.round(balanceMsat / 1000);
+                STATE.wallet.lastBalance = sats;
+                STATE.wallet.lastBalanceAt = Date.now();
+                $('wallet-balance-val').textContent = `${sats.toLocaleString()} sats`;
+                logEvent("OK", "SYSTEM", `Wallet balance retrieved: ${sats.toLocaleString()} sats.`);
+            } catch (e) {
+                $('wallet-balance-val').textContent = "ERROR";
+                logEvent("ERROR", "WALLET", `Balance check failed: ${formatWalletError(e)}`);
+                alert(`Failed to retrieve wallet balance:\n\n${formatWalletError(e)}`);
+            } finally {
+                setBusy(false);
+                updateWalletStatusUI();
+            }
+        }
+
+        async function createWalletInvoice() {
+            const amountRaw = $('wallet-invoice-amount').value.trim();
+            const memo = $('wallet-invoice-memo').value.trim();
+            const amountSats = parseInt(amountRaw, 10);
+
+            if (!amountRaw || isNaN(amountSats) || amountSats <= 0) {
+                return alert("Enter a valid invoice amount in sats (a positive whole number).");
+            }
+            if (amountSats > 100000000 && !confirm(`You're creating an invoice for ${amountSats.toLocaleString()} sats (1 BTC or more). Continue?`)) {
+                return;
+            }
+
+            setBusy(true, "GENERATING INVOICE");
+            logEvent("WALLET", "SYSTEM", `Requesting invoice for ${amountSats.toLocaleString()} sats via NWC make_invoice...`);
+            try {
+                await ensureWalletConnected();
+                if (!STATE.wallet.supportedMethods.includes('make_invoice')) {
+                    throw new Error("This NWC connection is not authorized for make_invoice (see supported-methods line above). Re-authorize it in Alby's Connected Apps settings.");
+                }
+
+                const result = await executeWalletRequest("make_invoice", (client) =>
+                    client.makeInvoice({ amount: amountSats * 1000, description: memo || undefined })
+                );
+                const bolt11 = result?.invoice;
+                if (!bolt11) throw new Error("Wallet service returned an empty invoice.");
+
+                $('wallet-invoice-output').value = bolt11;
+                $('wallet-invoice-output-wrap').style.display = 'block';
+                logEvent("OK", "SYSTEM", `Invoice generated for ${amountSats.toLocaleString()} sats.`);
+            } catch (e) {
+                logEvent("ERROR", "WALLET", `Invoice creation failed: ${formatWalletError(e)}`);
+                alert(`Failed to create invoice:\n\n${formatWalletError(e)}`);
+            } finally {
+                setBusy(false);
+                updateWalletStatusUI();
+            }
+        }
+
+        function stripUrls(text) { return text.replace(/https?:\/\/[^\s]+/g, '').replace(/\s{2,}/g, ' ').trim(); }
+
+        function getSecKeyBytes(nsec) {
+            try {
+                const decoded = nip19.decode(nsec);
+                if (decoded.type === 'nsec') return decoded.data;
+            } catch (e) { return null; }
+            return null;
+        }
+
+        function generateNewBotObj() {
+            const sk = generateSecretKey();
+            return {
+                nsec: nip19.nsecEncode(sk),
+                npub: nip19.npubEncode(getPublicKey(sk)),
+                persona: "neutral, ai, 0, synthetic observer, iq:high — logical, succinct",
+                characters: "A newly initialized node.",
+                xp: 0
+            };
+        }
+
+        window.removeBot = function(bid) {
+            if(confirm(`WARNING: Are you sure you want to permanently remove identity [ ${bid} ]?`)) {
+                delete STATE.bots[bid];
+                if(STATE.activeBotId === bid) {
+                    STATE.activeBotId = null;
+                    $('active-bot-display').textContent = "AWAITING SELECTION";
+                }
+                saveBots();
+                renderBotRoster();
+                $('manage-bots-txt').value = JSON.stringify(STATE.bots, null, 2);
+                logEvent("INFO", "SYSTEM", `Identity ${bid} successfully purged.`);
+            }
+        };
+
+        function initApp() {
+            loadPersistence();
+            setupEventListeners();
+            renderRelays();
+            renderBotRoster();
+            renderHistory();
+            
+            if ($('manage-bots-txt').value.trim() === '') {
+                $('manage-bots-txt').value = JSON.stringify(STATE.bots, null, 2);
+            }
+            
+            $('prompt-base-txt').value = STATE.autoPilot.basePrompt;
+            $('prompt-directive-txt').value = STATE.autoPilot.directive;
+            $('auto-interval-sel').value = STATE.autoPilot.intervalMs.toString();
+            $('chk-dvm-auto').checked = STATE.autoPilot.dvmEnabled;
+            updateWalletStatusUI();
+
+            logEvent("INFO", "SYSTEM", `Manager UI initialized. ${Object.keys(STATE.bots).length} distinct identities online.`);
+        }
+
+        window.addEventListener('beforeunload', () => {
+            if (STATE.wallet.client) { try { STATE.wallet.client.close(); } catch (e) { /* noop */ } }
+        });
+
+        function loadPersistence() {
+            const savedTheme = localStorage.getItem('swarm_theme');
+            if (savedTheme) {
+                document.body.className = savedTheme;
+                $('theme-selector').value = savedTheme;
+            }
+
+            const savedKey = localStorage.getItem('swarm_api_key');
+            if (savedKey) { STATE.apiKey = savedKey; $('api-key-ent').value = savedKey; }
+
+            const savedNwcUrl = localStorage.getItem('swarm_wallet_nwc_url');
+            if (savedNwcUrl) { STATE.wallet.nwcUrl = savedNwcUrl; $('wallet-nwc-url').value = savedNwcUrl; }
+            
+            const savedRelays = localStorage.getItem('swarm_relays');
+            if (savedRelays) STATE.relays = JSON.parse(savedRelays);
+            
+            const savedBots = localStorage.getItem('swarm_bots');
+            if (savedBots) { 
+                try { STATE.bots = JSON.parse(savedBots); } catch(e){} 
+            } 
+            
+            if (Object.keys(STATE.bots).length === 0) {
+                STATE.bots = { "bot_1": generateNewBotObj() };
+                saveBots();
+            }
+
+            const savedReplied = localStorage.getItem('swarm_replied');
+            if (savedReplied) { try { STATE.repliedEvents = JSON.parse(savedReplied); } catch(e){} }
+            $('replied-lbl').textContent = `Cache: ${Object.keys(STATE.repliedEvents).length} events`;
+
+            const savedXpTracked = localStorage.getItem('swarm_xp_tracked');
+            if (savedXpTracked) { try { STATE.xpTrackedEvents = JSON.parse(savedXpTracked); } catch(e){} }
+
+            const savedHistory = localStorage.getItem('swarm_history');
+            if (savedHistory) {
+                try { STATE.publishedHistory = JSON.parse(savedHistory); } catch(e){}
+            }
+
+            const savedAuto = localStorage.getItem('swarm_auto_settings');
+            if(savedAuto) {
+                try {
+                    const parsed = JSON.parse(savedAuto);
+                    STATE.autoPilot.basePrompt = parsed.basePrompt || STATE.autoPilot.basePrompt;
+                    STATE.autoPilot.directive = parsed.directive || "";
+                    STATE.autoPilot.intervalMs = parsed.intervalMs || 300000;
+                    STATE.autoPilot.dvmEnabled = parsed.dvmEnabled || false;
+                } catch(e){}
+            }
+        }
+
+        function saveBots() { localStorage.setItem('swarm_bots', JSON.stringify(STATE.bots)); }
+        
+        function saveHistory() { localStorage.setItem('swarm_history', JSON.stringify(STATE.publishedHistory)); }
+
+        function saveAutoSettings() {
+            localStorage.setItem('swarm_auto_settings', JSON.stringify({
+                basePrompt: STATE.autoPilot.basePrompt,
+                directive: STATE.autoPilot.directive,
+                intervalMs: STATE.autoPilot.intervalMs,
+                dvmEnabled: STATE.autoPilot.dvmEnabled
+            }));
+        }
+
+        function markReplied(eventId, botId) {
+            STATE.repliedEvents[eventId] = botId;
+            const keys = Object.keys(STATE.repliedEvents);
+            if (keys.length > 1500) delete STATE.repliedEvents[keys[0]]; 
+            localStorage.setItem('swarm_replied', JSON.stringify(STATE.repliedEvents));
+            $('replied-lbl').textContent = `Cache: ${Object.keys(STATE.repliedEvents).length} events`;
+        }
+
+        function renderBotRoster(filterText = "") {
+            const list = $('bot-list');
+            list.innerHTML = "";
+            Object.keys(STATE.bots).sort((a,b) => (parseInt(a.split('_')[1] || 0) - parseInt(b.split('_')[1] || 0))).forEach(bid => {
+                const bot = STATE.bots[bid];
+                const personaStr = (bot.persona || "").toLowerCase();
+                if (filterText && !bid.toLowerCase().includes(filterText) && !personaStr.includes(filterText)) return;
+                
+                const parts = (bot.persona || "").split('—');
+                const stats = parts[0] ? parts[0].trim() : "";
+                const chars = bot.characters || (parts[1] ? parts[1].trim() : "");
+                const bits = stats.split(',').map(s => s.trim());
+                const trait = bits[0] || ""; const gender = bits[1] || ""; const age = bits[2] || "";
+                const ptype = (bits[3] || "").replace("sort of ", ""); const iq = (bits[4] || "").replace("iq:", "");
+                
+                let npub = bot.npub;
+                if (!npub && bot.nsec) { const sk = getSecKeyBytes(bot.nsec); if (sk) npub = nip19.npubEncode(getPublicKey(sk)); }
+                
+                const botXp = bot.xp || 0;
+                const botLvl = getBotLevel(botXp);
+                
+                const card = document.createElement('div');
+                card.className = `bot-card ${STATE.activeBotId === bid ? 'selected' : ''}`;
+                card.onclick = () => selectBot(bid);
+                card.innerHTML = `
+                    <div class="bot-header">
+                        <span class="bot-id">${bid.replace('_', ' ')} <span style="font-size: 11px; margin-left: 6px; padding: 2px 5px; background: var(--accent); color: var(--bg); border-radius: 4px;">LVL ${botLvl}</span></span>
+                        <div>
+                            <span style="font-size: 10px; border: 1px solid var(--accent); padding: 2px 6px; border-radius: 4px; color: var(--accent); margin-right: 8px;" title="${botXp} XP">IQ:${iq}</span>
+                            <button class="bot-del-icon" title="Remove Identity" onclick="removeBot('${bid}'); event.stopPropagation();">✕</button>
+                        </div>
+                    </div>
+                    <div class="bot-stats">${trait} ${gender}, ${age} | ${ptype}</div>
+                    ${chars ? `<div class="bot-chars">"${chars.length > 80 ? chars.substring(0,80)+'…' : chars}"</div>` : ''}
+                    <div class="bot-npub">${npub ? npub.substring(0, 24) + "..." : "Invalid nsec"}</div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function selectBot(bid) {
+            STATE.activeBotId = bid;
+            renderBotRoster($('bot-search').value.trim().toLowerCase());
+            const trait = STATE.bots[bid].persona ? STATE.bots[bid].persona.split(',')[0].trim() : "";
+            $('active-bot-display').textContent = `[ ${bid.replace('_', ' ').toUpperCase()} ] ${trait}`;
+        }
+
+        function renderRelays() {
+            const lb = $('relay-listbox');
+            lb.innerHTML = "";
+            STATE.relays.forEach(r => {
+                const opt = document.createElement('option'); opt.value = r; opt.text = r; lb.appendChild(opt);
+            });
+            localStorage.setItem('swarm_relays', JSON.stringify(STATE.relays));
+        }
+
+        function renderHistory() {
+            const container = $('history-container');
+            if(!container) return;
+            container.innerHTML = "";
+            
+            if (STATE.publishedHistory.length === 0) {
+                container.innerHTML = `<div class="dim-text mt-10" style="padding: 16px; text-align: center; border: 1px dashed var(--border); border-radius: 6px;">Telemetry archive empty. No outbound signals recorded.</div>`;
+                return;
+            }
+            
+            STATE.publishedHistory.forEach(item => {
+                const ts = new Date(item.timestamp * 1000).toLocaleString('en-US', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'});
+                const el = document.createElement('div');
+                el.className = 'note-card';
+                
+                let contextHtml = '';
+                if (item.type === 'REPLY' || item.type === 'DVM_RESULT' || item.type === 'DVM_FEEDBACK') {
+                    const parentText = item.parentContent ? item.parentContent.replace(/</g,'&lt;') : "Original context payload unavailable or untracked.";
+                    contextHtml = `
+                        <div class="history-parent-quote">
+                            <span class="dim-text" style="font-size: 11px; text-transform: uppercase; font-weight: 600;">↳ Parent Context Hex: ${item.parentHex.substring(0,16)}...</span>
+                            <span class="parent-text">"${parentText}"</span>
+                        </div>
+                    `;
+                }
+
+                el.innerHTML = `
+                    <div class="note-header">
+                        <span style="color: var(--text); font-weight: 700; font-size: 14px; text-transform: uppercase;">[ ${item.botId.replace('_', ' ')} ]</span>
+                        <span class="log-tag tag-${item.type}" style="margin-right: auto; margin-left: 12px;">${item.type}</span>
+                        <span class="dim-text">${ts}</span>
+                    </div>
+                    ${contextHtml}
+                    <div class="note-body">${item.content.replace(/</g,'&lt;')}</div>
+                    <div class="flex-between" style="border-top: 1px solid var(--border); padding-top: 12px;">
+                        <span class="dim-text" style="font-size:11px; font-family: var(--font-mono);">ID: ${item.id}</span>
+                        <a href="https://njump.me/${item.id}" target="_blank" class="btn btn-secondary" style="padding: 4px 10px; font-size: 11px; text-decoration: none;">VERIFY EXTERNALLY ↗</a>
+                    </div>
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        async function publishNote(botId, content, parentHex = null, parentPubkey = null, parentContent = null, eventKind = 1, extraTags = []) {
+            const bot = STATE.bots[botId];
+            const sk = getSecKeyBytes(bot.nsec);
+            if (!sk) throw new Error("Invalid cryptographic key configuration.");
+            
+            let tags = [];
+            if (parentHex && parentPubkey) {
+                tags.push(["e", parentHex, "", "reply"]);
+                tags.push(["p", parentPubkey]);
+            }
+            if (eventKind === 6050) {
+                tags.push(["status", "success"]);
+            }
+            
+            if (extraTags && extraTags.length > 0) {
+                tags.push(...extraTags);
+            }
+
+            const evtTemplate = { kind: eventKind, created_at: Math.floor(Date.now()/1000), tags, content };
+            const signedEvent = finalizeEvent(evtTemplate, sk);
+            await Promise.any(STATE.pool.publish(STATE.relays, signedEvent));
+            
+            const noteId = nip19.noteEncode(signedEvent.id);
+            markReplied(noteId, botId);
+            if(parentHex) markReplied(parentHex, botId);
+            
+            let type = 'POST';
+            if(eventKind === 6050) type = 'DVM_RESULT';
+            else if(eventKind === 7000) type = 'DVM_FEEDBACK';
+            else if(parentHex) type = 'REPLY';
+
+            STATE.publishedHistory.unshift({
+                id: noteId,
+                hex: signedEvent.id,
+                botId: botId,
+                content: content,
+                parentHex: parentHex,
+                parentContent: parentContent,
+                timestamp: signedEvent.created_at,
+                type: type
+            });
+            
+            if (STATE.publishedHistory.length > 500) {
+                STATE.publishedHistory.pop();
+            }
+            saveHistory();
+            renderHistory();
+
+            return noteId;
+        }
+
+        async function broadcastNote() {
+            if (!STATE.activeBotId) return alert("Focus Target not selected.");
+            const content = stripUrls($('compose-txt').value);
+            if (!content) return alert("Payload buffer empty.");
+
+            setBusy(true, "TRANSMITTING");
+            logEvent("POST", STATE.activeBotId, `Tx Payload: ${content.substring(0,60)}...`);
+            try {
+                const noteId = await publishNote(STATE.activeBotId, content);
+                logEvent("OK", STATE.activeBotId, `Broadcast confirmed. Node ID: ${noteId}`);
+                logEvent("LINK", STATE.activeBotId, `https://njump.me/${noteId}`);
+                $('compose-txt').value = ""; $('char-count-lbl').textContent = "0 bytes";
+            } catch(err) { logEvent("ERROR", STATE.activeBotId, `Tx failed: ${err.message}`); }
+            setBusy(false);
+        }
+
+        async function sendReply() {
+            if (!STATE.activeBotId) return alert("Focus Target not selected.");
+            let replyIdRaw = $('reply-id-ent').value.trim();
+            if (!replyIdRaw) return alert("Specify Target Event ID.");
+            
+            let parentHex = replyIdRaw;
+            try { if (replyIdRaw.startsWith('note1')) parentHex = nip19.decode(replyIdRaw).data; } catch(e) { return alert("Invalid Node ID format."); }
+
+            if (STATE.repliedEvents[replyIdRaw] || STATE.repliedEvents[parentHex]) {
+                if (!confirm("System Warning: Event currently resides in Cache Memory. Transmit duplicate response?")) return;
+            }
+
+            const content = stripUrls($('reply-txt').value);
+            if (!content) return alert("Payload buffer empty.");
+
+            setBusy(true, "TRANSMITTING REPLY");
+            logEvent("REPLY", STATE.activeBotId, `Targeting: ${replyIdRaw.substring(0,12)}...`);
+            try {
+                const parentEvt = await STATE.pool.get(STATE.relays, { ids: [parentHex] });
+                if (!parentEvt) throw new Error("Target node unresolvable on current relay topology.");
+                
+                const noteId = await publishNote(STATE.activeBotId, content, parentHex, parentEvt.pubkey, parentEvt.content);
+                markReplied(replyIdRaw, STATE.activeBotId);
+                
+                logEvent("OK", STATE.activeBotId, `Reply successfully transmitted. ID: ${noteId}`);
+                logEvent("LINK", STATE.activeBotId, `https://njump.me/${noteId}`);
+                $('reply-id-ent').value = ""; $('reply-txt').value = ""; 
+                const ctxLbl = $('reply-ctx-lbl'); ctxLbl.textContent = ""; ctxLbl.style.display = "none";
+            } catch(err) { logEvent("ERROR", STATE.activeBotId, `Tx failed: ${err.message}`); }
+            setBusy(false);
+        }
+
+        async function fetchGlobalFeed() {
+            const limit = parseInt($('feed-limit-var').value) || 15;
+            setBusy(true, "SCANNING TOPOLOGY");
+            logEvent("READ", "SYSTEM", `Analyzing global network channels... limit: ${limit}`);
+            try {
+                const botPubkeys = new Set();
+                Object.values(STATE.bots).forEach(b => { const sk = getSecKeyBytes(b.nsec); if (sk) botPubkeys.add(getPublicKey(sk)); });
+                
+                let events = await STATE.pool.querySync(STATE.relays, { kinds: [1], limit: limit + 100 });
+                events.sort((a,b) => b.created_at - a.created_at); 
+                
+                let filtered = events.filter(e => {
+                    const noteId = nip19.noteEncode(e.id);
+                    return !botPubkeys.has(e.pubkey) && !STATE.repliedEvents[noteId] && !STATE.repliedEvents[e.id] && !e.tags.some(t => t[0] === 'e'); 
+                }).slice(0, limit);
+                
+                renderNotesList('feed-container', filtered);
+                logEvent("OK", "SYSTEM", `Successfully acquired ${filtered.length} viable targets.`);
+            } catch(err) { logEvent("ERROR", "SYSTEM", `Topology scan failure: ${err.message}`); }
+            setBusy(false);
+        }
+
+        async function checkMentions() {
+            if (!STATE.activeBotId) return alert("Focus Target not selected.");
+            const sk = getSecKeyBytes(STATE.bots[STATE.activeBotId].nsec);
+            if (!sk) return;
+            setBusy(true, "FETCHING MENTIONS");
+            logEvent("MENTIONS", STATE.activeBotId, `Querying network mentions...`);
+            try {
+               let events = await STATE.pool.querySync(STATE.relays, { kinds: [1], '#p': [getPublicKey(sk)], limit: 20 });
+                events.sort((a,b) => b.created_at - a.created_at);
+                
+                let xpGained = false;
+                events.forEach(e => {
+                    if (e.pubkey !== getPublicKey(sk) && awardXP(STATE.activeBotId, e.id, 10)) {
+                        xpGained = true;
+                    }
+                });
+                if (xpGained) renderBotRoster();
+
+                let filtered = events.filter(e => !STATE.repliedEvents[nip19.noteEncode(e.id)] && !STATE.repliedEvents[e.id]);
+                renderNotesList('mentions-container', filtered);
+                logEvent("OK", STATE.activeBotId, `Identified ${filtered.length} pending engagement nodes.`);
+            } catch(err) { logEvent("ERROR", STATE.activeBotId, `Query failure: ${err.message}`); }
+            setBusy(false);
+        }
+
+        async function fetchDVMJobs() {
+            setBusy(true, "SCANNING DVM QUEUE");
+            logEvent("DVM", "SYSTEM", `Scanning network for Open Kind 5050 Jobs...`);
+            try {
+                let events = await STATE.pool.querySync(STATE.relays, { kinds: [5050], limit: 20 });
+                events.sort((a,b) => b.created_at - a.created_at);
+                
+                let filtered = events.filter(e => !STATE.repliedEvents[e.id]);
+                
+                const container = $('dvm-container'); container.innerHTML = "";
+                if (filtered.length === 0) {
+                    container.innerHTML = `<div class="dim-text mt-10" style="padding: 16px; text-align: center; border: 1px dashed var(--border); border-radius: 6px;">No Open DVM Tasks identified on current relays.</div>`;
+                } else {
+                    filtered.forEach(e => {
+                        const ts = new Date(e.created_at * 1000).toLocaleString('en-US', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+                        
+                        let amountParams = e.tags.find(t => t[0] === 'amount');
+                        let bidParams = e.tags.find(t => t[0] === 'bid');
+                        
+                        let paymentStr = 'UNSPECIFIED / FREE';
+                        let isPaid = false;
+
+                        if (amountParams && amountParams.length > 1) {
+                            paymentStr = `AMOUNT: ${amountParams[1]} msats`;
+                            isPaid = true;
+                        } else if (bidParams && bidParams.length > 1) {
+                            let maxBid = bidParams[2] ? ` (Max: ${bidParams[2]})` : '';
+                            paymentStr = `BID: ${bidParams[1]} msats${maxBid}`;
+                            isPaid = true;
+                        } else {
+                            let pAmount = e.tags.find(t => t[0] === 'param' && t[1] === 'amount');
+                            let pBid = e.tags.find(t => t[0] === 'param' && t[1] === 'bid');
+                            if (pAmount && pAmount.length > 2) {
+                                paymentStr = `AMOUNT: ${pAmount[2]} msats`;
+                                isPaid = true;
+                            } else if (pBid && pBid.length > 2) {
+                                paymentStr = `BID: ${pBid[2]} msats`;
+                                isPaid = true;
+                            }
+                        }
+
+                        let iTags = e.tags.filter(t => t[0] === 'i');
+                        let pTags = e.tags.filter(t => t[0] === 'param');
+
+                        let inputHtml = iTags.map(t => {
+                            let type = t[2] || 'text';
+                            let val = t[1].replace(/</g,'&lt;');
+                            return `<div style="margin-bottom: 6px;"><strong style="color: var(--accent);">[Input | ${type.toUpperCase()}]</strong><br><span style="word-break: break-all;">${val}</span></div>`;
+                        }).join('');
+
+                        let paramHtml = pTags.map(t => {
+                            let key = t[1];
+                            let val = t[2] ? t[2].replace(/</g,'&lt;') : '';
+                            return `<div style="margin-bottom: 4px;"><strong style="color: var(--dim);">[Param | ${key}]</strong> ${val}</div>`;
+                        }).join('');
+
+                        let contentHtml = '';
+                        if (e.content && e.content.trim() !== '') {
+                            contentHtml = `<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);"><strong style="color: var(--dim);">[Payload Content]</strong><br><span style="word-break: break-word;">${e.content.replace(/</g,'&lt;')}</span></div>`;
+                        }
+
+                        const el = document.createElement('div'); 
+                        el.className = 'note-card dvm-card';
+                        el.innerHTML = `
+                            <div class="note-header">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span class="dvm-text font-weight-700">JOB: TEXT SYNTHESIS (5050)</span>
+                                    <span class="log-tag ${isPaid ? 'tag-DVM' : 'tag-INFO'}" style="margin: 0; padding: 4px 8px; font-size: 11px;">${paymentStr}</span>
+                                </div>
+                                <span class="dim-text">${ts}</span>
+                            </div>
+                            <div class="note-body" style="font-family: var(--font-mono); font-size: 12px; background: var(--bg); padding: 12px; border-radius: 4px; max-height: 250px; overflow-y: auto;">
+                                ${inputHtml}
+                                ${paramHtml}
+                                ${contentHtml}
+                                ${(!inputHtml && !contentHtml && !paramHtml) ? '<span class="dim-text italic">No standardized job payload data found.</span>' : ''}
+                            </div>
+                            
+                            <!-- Dynamic Execution/Payment Status Area -->
+                            <div class="dvm-status-area"></div>
+
+                            <div class="flex-between mt-10">
+                                <div>
+                                    <button class="btn btn-dvm dvm-exec-btn" style="padding:6px 12px; font-size:11px; font-weight: 700;">REQUEST PAYMENT & EXECUTE</button>
+                                </div>
+                                <span class="dim-text" style="font-size:11px;">Hex: ${e.id.substring(0,16)}...</span>
+                            </div>
+                        `;
+                        
+                        el.querySelector('.dvm-exec-btn').onclick = (evt) => {
+                            const btn = evt.target;
+                            btn.disabled = true;
+                            btn.textContent = "EXECUTING MODULE...";
+                            executeDVMJobManual(e, el.querySelector('.dvm-status-area'));
+                        };
+                        container.appendChild(el);
+                    });
+                }
+                logEvent("OK", "SYSTEM", `Identified ${filtered.length} open NIP-90 job requests.`);
+            } catch(err) { logEvent("ERROR", "SYSTEM", `DVM Query failure: ${err.message}`); }
+            setBusy(false);
+        }
+
+        async function executeDVMJobManual(jobEvent, statusArea) {
+            if (!STATE.activeBotId) {
+                alert("Focus Target not selected. Select a bot to execute the job.");
+                return;
+            }
+            if(confirm(`Intercept NIP-90 Job Request (Hex: ${jobEvent.id.substring(0,8)}) and generate invoice?`)) {
+                await processDVMEvent(jobEvent, STATE.activeBotId, statusArea);
+            }
+        }
+
+        async function processDVMEvent(jobEvent, botId, statusArea) {
+            const bot = STATE.bots[botId];
+            logEvent("DVM", botId, `Intercepting Kind 5050 Job: ${jobEvent.id.substring(0,12)}...`);
+            
+            // Ensure status area is active and reset
+            if (statusArea) {
+                statusArea.classList.add("active");
+                statusArea.innerHTML = `<span class="dim-text">Validating Input Data Payload...</span>`;
+            }
+            
+            try {
+                // 1. EXTRACT NIP-90 INPUT DATA
+                const iTags = jobEvent.tags.filter(t => t[0] === 'i');
+                if (iTags.length === 0) {
+                    throw new Error("NULL_INPUT_ERROR: Malformed Kind 5050 Event. No 'i' (input) tags found.");
+                }
+
+                let jobInputText = "";
+                for (const tag of iTags) {
+                    const data = tag[1];
+                    const type = tag[2] || 'text';
+
+                    if (type === 'text') {
+                        jobInputText += data + "\n";
+                    } else if (type === 'event') {
+                        logEvent("DVM", botId, `Resolving parent event reference: ${data.substring(0,12)}...`);
+                        try {
+                            const resolvedEvent = await STATE.pool.get(STATE.relays, { ids: [data] });
+                            if (!resolvedEvent || !resolvedEvent.content) {
+                                throw new Error(`Relay connections failed to fetch event text content for ${data}`);
+                            }
+                            jobInputText += resolvedEvent.content + "\n";
+                        } catch (err) {
+                            throw new Error(`NULL_INPUT_ERROR: Unresolvable Event Reference. ${err.message}`);
+                        }
+                    }
+                }
+
+                const finalInput = jobInputText.trim() || jobEvent.content.trim();
+                
+                if (!finalInput) {
+                   throw new Error("NULL_INPUT_ERROR: Final resolved input content is empty.");
+                }
+
+                // 2. EXTRACT PAYMENT DATA & INVOICE VIA PAYMENT ENGINE
+                if (statusArea) statusArea.innerHTML = `<span class="dim-text">Calculating Job Quote & Interfacing with Payment Engine...</span>`;
+
+                let amountMsats = 50000; // default 50 sats if no bid is present
+                const amountTag = jobEvent.tags.find(t => t[0] === 'amount' || (t[0] === 'param' && t[1] === 'amount'));
+                const bidTag = jobEvent.tags.find(t => t[0] === 'bid' || (t[0] === 'param' && t[1] === 'bid'));
+                
+                if (bidTag && bidTag[0] === 'bid' && bidTag[1]) amountMsats = parseInt(bidTag[1]);
+                else if (bidTag && bidTag[1] === 'bid' && bidTag[2]) amountMsats = parseInt(bidTag[2]);
+                else if (amountTag && amountTag[0] === 'amount' && amountTag[1]) amountMsats = parseInt(amountTag[1]);
+                else if (amountTag && amountTag[1] === 'amount' && amountTag[2]) amountMsats = parseInt(amountTag[2]);
+
+                const amountSats = Math.max(1, Math.floor(amountMsats / 1000));
+                
+                let coinosToken = localStorage.getItem('swarm_coinos_token');
+                if (!coinosToken) {
+                    // TDZ FIX: Use window.prompt explicitly to avoid scope collision with downstream llmPrompt
+                    coinosToken = window.prompt("Enter Coinos API Token to generate DVM invoices via the payment engine backend:");
+                    if (coinosToken) {
+                        localStorage.setItem('swarm_coinos_token', coinosToken);
+                    } else {
+                        throw new Error("COINOS_TOKEN_MISSING: Cannot generate invoice without API token.");
+                    }
+                }
+
+                logEvent("DVM", botId, `Requesting invoice for ${amountSats} sats from paymentengine.py...`);
+                let invoiceRes;
+                try {
+                    const response = await fetch("http://127.0.0.1:5000/api/invoice", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ amount: amountSats, memo: `DVM Job ${jobEvent.id.substring(0,8)}`, token: coinosToken })
+                    });
+                    invoiceRes = await response.json();
+                    if (!response.ok || !invoiceRes.success) throw new Error(invoiceRes.detail || "Failed to generate invoice");
+                } catch (e) {
+                    throw new Error(`PAYMENT_ENGINE_ERROR: ${e.message}`);
+                }
+                
+                const bolt11 = invoiceRes.bolt11;
+                const paymentHash = invoiceRes.payment_hash;
+
+                // 3. BROADCAST KIND 7000 (Payment Feedback)
+                if (statusArea) statusArea.innerHTML = `<span class="dim-text">Broadcasting Kind 7000 Feedback Request to topology...</span>`;
+                logEvent("DVM", botId, `Broadcasting Kind 7000 Feedback (Payment Required)...`);
+                
+                const feedbackTags = [
+                    ["status", "payment-required"],
+                    ["amount", amountMsats.toString(), bolt11]
+                ];
+                
+                const feedbackId = await publishNote(botId, "Payment required for DVM Job.", jobEvent.id, jobEvent.pubkey, null, 7000, feedbackTags);
+                logEvent("OK", botId, `Published Kind 7000 Feedback: ${feedbackId}. Awaiting payment...`);
+
+                // 4. POLL PAYMENT ENGINE FOR SETTLEMENT SIGNAL
+                if (statusArea) {
+                    statusArea.innerHTML = `
+                        <div style="padding: 12px; background: var(--bg); border-left: 3px solid var(--dvm-accent); border-radius: 4px;">
+                            <span class="dvm-text" style="font-weight: 700; display: block; margin-bottom: 8px;">AWAITING SETTLEMENT OF ${amountSats} SATS...</span>
+                            <textarea class="main-textarea code-font" rows="3" readonly style="font-size: 11px;">${bolt11}</textarea>
+                        </div>
+                    `;
+                }
+
+                logEvent("DVM", botId, `Polling paymentengine.py for settlement of ${paymentHash}...`);
+                let isPaid = false;
+                try {
+                    const pollRes = await fetch("http://127.0.0.1:5000/api/invoice/wait", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ payment_hash: paymentHash, token: coinosToken, timeout: 300 })
+                    });
+                    const pollData = await pollRes.json();
+                    isPaid = pollData.paid;
+                } catch (e) {
+                    throw new Error(`PAYMENT_POLL_ERROR: ${e.message}`);
+                }
+
+                if (!isPaid) {
+                    throw new Error("PAYMENT_TIMEOUT: Invoice was not paid within standard operational limit.");
+                }
+
+                logEvent("OK", botId, `Payment settled! Synthesizing prompt payload...`);
+                if (statusArea) statusArea.innerHTML = `<span class="accent-text" style="font-weight: 700;">PAYMENT SETTLED! Executing LLM Synthesis Node...</span>`;
+
+                // 5. EXECUTE SYNTHESIS & BROADCAST KIND 6050
+                // TDZ FIX: Renamed 'prompt' to 'llmPrompt'
+                const llmPrompt = `You are a Data Vending Machine executing a text synthesis job. Return ONLY the requested output based on this input. Do not add conversational padding.\n\nInput Prompt: "${finalInput}"`;
+                
+                const output = await callGeminiRaw(bot, llmPrompt, true); 
+                if (output) {
+                    const noteId = await publishNote(botId, output, jobEvent.id, jobEvent.pubkey, finalInput, 6050);
+                    logEvent("OK", botId, `DVM Job Processed & Published (Kind 6050): ${noteId}`);
+                    awardXP(botId, jobEvent.id, 25);
+                    renderBotRoster();
+                    if (statusArea) statusArea.innerHTML = `<span style="color: var(--accent); font-weight: 700;">JOB COMPLETE! Kind 6050 Payload Deployed.</span>`;
+                } else {
+                    throw new Error("LLM_SYNTHESIS_ERROR: Generation returned null output.");
+                }
+
+            } catch(e) {
+                logEvent("ERROR", botId, `DVM Validation/Execution Failed: ${e.message}`);
+                if (statusArea) statusArea.innerHTML = `<span class="error-text" style="font-weight: 700;">EXECUTION ABORTED: ${e.message}</span>`;
+                
+                if (e.message.includes("NULL_INPUT_ERROR") || e.message.includes("PAYMENT_TIMEOUT")) {
+                    logEvent("DVM", botId, `Broadcasting Kind 7000 Feedback (Error Status)...`);
+                    try {
+                        const feedbackTags = [
+                            ["status", "error", e.message]
+                        ];
+                        const noteId = await publishNote(botId, `Job failed: ${e.message}`, jobEvent.id, jobEvent.pubkey, null, 7000, feedbackTags);
+                        logEvent("OK", botId, `Published Kind 7000 Feedback Event: ${noteId}`);
+                    } catch (fbErr) {
+                        logEvent("ERROR", botId, `Failed to broadcast Kind 7000 feedback: ${fbErr.message}`);
+                    }
+                }
+            }
+        }
+
+        function renderNotesList(containerId, events) {
+            const container = $(containerId); container.innerHTML = "";
+            if (events.length === 0) return container.innerHTML = `<div class="dim-text mt-10" style="padding: 16px; text-align: center; border: 1px dashed var(--border); border-radius: 6px;">No viable signal nodes detected.</div>`;
+            events.forEach(e => {
+                const noteId = nip19.noteEncode(e.id); const npub = nip19.npubEncode(e.pubkey);
+                const ts = new Date(e.created_at * 1000).toLocaleString('en-US', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+                const el = document.createElement('div'); el.className = 'note-card';
+                el.innerHTML = `
+                    <div class="note-header"><span class="note-author">${npub.substring(0, 16)}...</span><span class="dim-text">${ts}</span></div>
+                    <div class="note-body">${e.content.substring(0,300).replace(/</g,'&lt;')}${e.content.length>300?'...':''}</div>
+                    <div class="flex-between">
+                        <button class="btn btn-outline prefill-btn" style="padding:6px 12px; font-size:11px;">TARGET NODE</button>
+                        <span class="dim-text" style="font-size:11px; font-family: var(--font-mono);">${noteId.substring(0,25)}...</span>
+                    </div>
+                `;
+                el.querySelector('.prefill-btn').onclick = () => prefillReply(noteId, npub, e.content);
+                container.appendChild(el);
+            });
+        }
+
+        function prefillReply(noteId, author, content) {
+            $('reply-id-ent').value = noteId;
+            const ctxLbl = $('reply-ctx-lbl');
+            ctxLbl.style.display = "block";
+            ctxLbl.textContent = `↳ ${author.substring(0,16)}... : ${content.substring(0,100).replace(/\n/g,' ')}...`;
+            document.querySelector('.tab-link[data-tab="tab-reply"]').click();
+            $('reply-txt').focus();
+        }
+
+        // LLM Interfacing
+        async function callGeminiRaw(botObj, userPrompt, isDVM = false) {
+            if (!STATE.apiKey) throw new Error("API Key required for LLM Integration.");
+            
+            let systemPrompt = STATE.autoPilot.basePrompt + `\n\nYou are operating on the Nostr network under the following identity schema:\nAttributes: ${botObj.persona || "Standard AI"}\nCharacter Definition: ${botObj.characters || "None"}\n\nOperate strictly within parameters. Output natural language. Absolutely no hashtags.`;
+            
+            if (isDVM) {
+                systemPrompt = "You are a specialized text processor running as a decentralized function node. Follow instructions precisely without character affectation.";
+            } else if (STATE.autoPilot.directive.trim()) {
+                systemPrompt += `\n\nCRITICAL OVERRIDE DIRECTIVE:\n${STATE.autoPilot.directive.trim()}`;
+            }
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${STATE.apiKey}`;
+            const payload = {
+                system_instruction: { parts: [{text: systemPrompt}] },
+                contents: [{ role: "user", parts: [{text: userPrompt}] }],
+                generationConfig: { temperature: isDVM ? 0.2 : 0.7 }
+            };
+
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error?.message || "LLM API Failure");
+                
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!text) throw new Error("Null response from model.");
+                return text.trim();
+            } catch(e) {
+                logEvent("ERROR", botObj.id || "SYSTEM", `LLM Synthesis Failed: ${e.message}`);
+                return null;
+            }
+        }
+
+        // --- UI BINDINGS ---
+        function setupEventListeners() {
+            $('btn-save-api').onclick = () => { STATE.apiKey =$('api-key-ent').value.trim(); localStorage.setItem('swarm_api_key', STATE.apiKey); logEvent("OK", "SYSTEM", "API Key secured."); };
+            
+            // Compose
+            $('compose-txt').oninput = e =>$('char-count-lbl').textContent = `${e.target.value.length} bytes`;
+            $('btn-clear-compose').onclick = () => { $('compose-txt').value = ""; $('char-count-lbl').textContent = "0 bytes"; };
+            $('btn-post').onclick = broadcastNote;
+            
+            $('btn-ai-compose').onclick = async () => {
+                if (!STATE.activeBotId) return alert("Select Focus Target first.");
+                setBusy(true, "SYNTHESIZING");
+                const out = await callGeminiRaw(STATE.bots[STATE.activeBotId], "Generate a novel, engaging network payload based on your persona. Provide ONLY the final text string.");
+                if (out) { $('compose-txt').value = out; $('char-count-lbl').textContent = `${out.length} bytes`; }
+                setBusy(false);
+            };
+
+            // Reply
+            $('btn-clear-reply').onclick = () => { $('reply-txt').value = ""; $('reply-id-ent').value = ""; $('reply-ctx-lbl').style.display = 'none'; };$('btn-reply').onclick = sendReply;
+            $('btn-ai-reply').onclick = async () => {
+                if (!STATE.activeBotId) return alert("Select Focus Target first.");
+                let rId = $('reply-id-ent').value.trim();
+                if (!rId) return alert("Specify Target Event ID.");
+                setBusy(true, "SYNTHESIZING");
+                const out = await callGeminiRaw(STATE.bots[STATE.activeBotId], `Formulate a response to a network event targeting your persona. Only provide the text string.`);
+                if (out) $('reply-txt').value = out;
+                setBusy(false);
+            };
+
+            // Network Feeds
+            $('btn-fetch-feed').onclick = fetchGlobalFeed;
+            $('btn-check-mentions').onclick = checkMentions;
+
+            // DVM
+            $('btn-scan-dvm').onclick = fetchDVMJobs;
+
+            // Autopilot
+            $('btn-auto-start').onclick = () => {
+                if(STATE.autoPilot.timerId) return;
+                STATE.autoPilot.enabled = true;
+                const interval = parseInt($('auto-interval-sel').value) || 300000;
+                STATE.autoPilot.intervalMs = interval;
+                
+                logEvent("INFO", "SYSTEM", `Autopilot ACTIVATE: Interval ${interval/1000}s`);
+                $('auto-status-badge').textContent = "ACTIVE";
+                $('auto-status-badge').className = "status-badge badge-on";
+                
+                const loopFn = async () => {
+                    logEvent("INFO", "SYSTEM", `Autopilot TICK executed.`);
+                    if (STATE.autoPilot.dvmEnabled) {
+                         try {
+                             let events = await STATE.pool.querySync(STATE.relays, { kinds: [5050], limit: 5 });
+                             let openDVM = events.find(e => !STATE.repliedEvents[e.id]);
+                             if (openDVM && Object.keys(STATE.bots).length > 0) {
+                                 let firstBot = Object.keys(STATE.bots)[0];
+                                 await processDVMEvent(openDVM, firstBot, null);
+                             }
+                         } catch(e) {}
+                    }
+                    STATE.autoPilot.timerId = setTimeout(loopFn, STATE.autoPilot.intervalMs);
+                };
+                STATE.autoPilot.timerId = setTimeout(loopFn, interval);
+            };
+
+            $('btn-auto-stop').onclick = () => {
+                if(STATE.autoPilot.timerId) {
+                    clearTimeout(STATE.autoPilot.timerId);
+                    STATE.autoPilot.timerId = null;
+                }
+                STATE.autoPilot.enabled = false;
+                $('auto-status-badge').textContent = "SUSPENDED";
+                $('auto-status-badge').className = "status-badge badge-off";
+                logEvent("INFO", "SYSTEM", "Autopilot SUSPENDED.");
+            };
+            
+            $('btn-save-prompts').onclick = () => {
+                STATE.autoPilot.basePrompt = $('prompt-base-txt').value;
+                STATE.autoPilot.directive = $('prompt-directive-txt').value;
+                STATE.autoPilot.intervalMs = parseInt($('auto-interval-sel').value) || 300000;
+                STATE.autoPilot.dvmEnabled = $('chk-dvm-auto').checked;
+                saveAutoSettings();
+                logEvent("OK", "SYSTEM", "Prompt Configuration Committed.");
+            };
+            
+            // Wallet / NWC
+            $('btn-wallet-save').onclick = () => {
+                const url = $('wallet-nwc-url').value.trim();
+                const check = validateNwcUrl(url);
+                if (!check.valid && url !== "") return alert(check.error);
+                STATE.wallet.nwcUrl = url;
+                localStorage.setItem('swarm_wallet_nwc_url', url);
+                resetWalletConnection();
+                logEvent("OK", "SYSTEM", "Wallet Connection String saved.");
+            };
+
+            $('btn-wallet-connect').onclick = async () => {
+                const url = $('wallet-nwc-url').value.trim();
+                if (!url) return alert("Enter an NWC string first.");
+                try {
+                    await ensureWalletConnected(true);
+                    alert("Connection successful!");
+                } catch(e) {
+                    alert(`Connection Failed:\n\n${formatWalletError(e)}`);
+                }
+            };
+
+            $('btn-wallet-disconnect').onclick = () => {$('wallet-nwc-url').value = "";
+                STATE.wallet.nwcUrl = "";
+                localStorage.removeItem('swarm_wallet_nwc_url');
+                resetWalletConnection();
+                $('wallet-balance-val').textContent = "— sats";
+                $('wallet-balance-updated').textContent = "";
+                logEvent("INFO", "SYSTEM", "Wallet Disconnected.");
+            };
+
+            $('btn-wallet-balance').onclick = checkWalletBalance;
+            $('btn-wallet-invoice').onclick = createWalletInvoice;
+            
+            $('btn-wallet-copy-invoice').onclick = () => {
+                const ta = $('wallet-invoice-output');
+                ta.select();
+                document.execCommand('copy');
+                logEvent("OK", "SYSTEM", "Invoice copied to clipboard.");
+            };
+            
+            // Management
+            $('btn-export-bots').onclick = () => {$('manage-bots-txt').value = JSON.stringify(STATE.bots, null, 2);
+                logEvent("OK", "SYSTEM", "Identities exported to textarea.");
+            };
+            $('btn-save-bots').onclick = () => {
+                try {
+                    STATE.bots = JSON.parse($('manage-bots-txt').value);
+                    saveBots();
+                    renderBotRoster();
+                    logEvent("OK", "SYSTEM", "Manifest applied successfully.");
+                } catch(e) { alert("Invalid JSON"); }
+            };
+            $('btn-generate-bot').onclick = () => {
+                const newId = `bot_${Object.keys(STATE.bots).length + 1}`;
+                STATE.bots[newId] = generateNewBotObj();
+                $('manage-bots-txt').value = JSON.stringify(STATE.bots, null, 2);
+                saveBots(); renderBotRoster();
+                logEvent("INFO", "SYSTEM", `New default identity provisioned: ${newId}`);
+            };
+            $('btn-generate-ai-bot').onclick = async () => {
+                setBusy(true, "SYNTHESIZING IDENTITY");
+                logEvent("POST", "SYSTEM", "Requesting identity synthesis...");
+                const prompt = `Output ONLY valid JSON representing a single AI persona object with keys: "persona" (string, e.g. 'cynical, ai, 5, analyst, iq:high — sharp, sarcastic') and "characters" (string, e.g. 'A sarcastic crypto analyst...'). Do not include markdown formatting or backticks.`;
+                const out = await callGeminiRaw({persona:"system"}, prompt);
+                setBusy(false);
+                if (out) {
+                    try {
+                        let clean = out.replace(/```json/g,'').replace(/```/g,'').trim();
+                        const parsed = JSON.parse(clean);
+                        const newId = `bot_${Object.keys(STATE.bots).length + 1}`;
+                        let newBot = generateNewBotObj();
+                        newBot.persona = parsed.persona || newBot.persona;
+                        newBot.characters = parsed.characters || newBot.characters;
+                        STATE.bots[newId] = newBot;
+                        $('manage-bots-txt').value = JSON.stringify(STATE.bots, null, 2);
+                        saveBots(); renderBotRoster();
+                        logEvent("OK", "SYSTEM", `AI Identity synthesized: ${newId}`);
+                    } catch(e) { logEvent("ERROR", "SYSTEM", `Identity Parse Failed: ${e.message}`); }
+                }
+            };
+            $('btn-clear-log').onclick = () =>$('event-log').innerHTML = "";
+            $('btn-clear-history').onclick = () => {
+                if (confirm("Purge local telemetry archive?")) {
+                    STATE.publishedHistory = [];
+                    saveHistory(); renderHistory();
+                    logEvent("INFO", "SYSTEM", "Telemetry archive cleared.");
+                }
+            };
+            
+            // Relays
+            $('btn-add-relay').onclick = () => {
+                const r = $('relay-add-ent').value.trim();
+                if(r && r.startsWith('wss://') && !STATE.relays.includes(r)) { STATE.relays.push(r); renderRelays(); $('relay-add-ent').value = "wss://"; }
+            };
+            $('btn-remove-relay').onclick = () => {
+                const lb = $('relay-listbox');
+                if (lb.selectedIndex >= 0) { STATE.relays.splice(lb.selectedIndex, 1); renderRelays(); }
+            };
+
+            // Tabs & Theme
+            document.querySelectorAll('.tab-link').forEach(btn => {
+                btn.onclick = () => {
+                    document.querySelectorAll('.tab-link').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    btn.classList.add('active');
+                    $(btn.dataset.tab).classList.add('active');
+                };
+            });
+            $('theme-selector').onchange = (e) => {
+                document.body.className = e.target.value;
+                localStorage.setItem('swarm_theme', e.target.value);
+            };
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
