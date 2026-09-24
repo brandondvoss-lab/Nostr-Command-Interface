@@ -405,7 +405,7 @@
 <body class="theme-professional">
     <header class="top-bar">
         <div class="header-left">
-            <span class="app-title">Nostr Identity Manager</span>
+            <span class="app-title">Nostr Command Interface</span>
             <span class="dim-text ml-10">v3.2 AUTONOMOUS ENTERPRISE + DVM HUB</span>
         </div>
         <div class="header-right">
@@ -812,7 +812,7 @@
                 return data.content[0].text;
             } else {
                 // Gemini Default
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${STATE.apiKey}`;
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${STATE.apiKey}`;
                 const payload = {
                     system_instruction: { parts: [{ text: systemPrompt }] },
                     contents: [{ parts: [{ text: userPrompt }] }]
