@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nostr Identity Manager — Autonomous Enterprise Edition</title>
+    <title>Nostr Command Interface — Enterprise Edition</title>
     <style>
         :root {
             /* Default Theme: Professional (Steel/Corporate) */
@@ -657,8 +657,16 @@
         <aside class="panel right-panel">
             <fieldset class="config-box">
                 <legend>LLM INTEGRATION</legend>
-                <input type="password" id="api-key-ent" class="main-input" placeholder="Enter Gemini API Key...">
-                <div class="mt-10"><button id="btn-save-api" class="btn btn-secondary" style="width:100%">SECURE API KEY</button></div>
+                <span class="settings-label mt-5">PROVIDER</span>
+                <select id="llm-provider-sel" class="main-select mb-10">
+                    <option value="gemini">Google Gemini (v1beta)</option>
+                    <option value="claude">Anthropic Claude (v1)</option>
+                </select>
+                <span class="settings-label">API KEY</span>
+                <input type="password" id="api-key-ent" class="main-input mb-10" placeholder="Enter API Key...">
+                <span class="settings-label">CORS PROXY URL (CLAUDE ONLY, OPTIONAL)</span>
+                <input type="text" id="api-proxy-ent" class="main-input mb-10" placeholder="https://cors-anywhere.herokuapp.com/">
+                <div class="mt-5"><button id="btn-save-api" class="btn btn-secondary" style="width:100%">SECURE CREDENTIALS</button></div>
             </fieldset>
 
             <div class="panel-header mt-10">SYSTEM EVENT LOG</div>
@@ -692,7 +700,9 @@
             repliedEvents: {}, 
             xpTrackedEvents: {}, 
             publishedHistory: [], 
-            apiKey: "", 
+            apiKey: "",
+            llmProvider: "gemini",
+            proxyUrl: "",
             pool: new SimplePool(),
             wallet: {
                 nwcUrl: "",              
@@ -768,16 +778,79 @@
             lbl.className = isBusy ? "header-status dim-text" : "header-status accent-text";
         }
 
+        // --- LLM ENGINE ---
+        async function generateAIContent(systemPrompt, userPrompt) {
+            if (!STATE.apiKey) throw new Error("API Key not configured in System Settings.");
+            
+            if (STATE.llmProvider === 'claude') {
+                const proxy = STATE.proxyUrl ? (STATE.proxyUrl.endsWith('/') ? STATE.proxyUrl : STATE.proxyUrl + '/') : '';
+                const url = `${proxy}https://api.anthropic.com/v1/messages`;
+                
+                const payload = {
+                    model: 'claude-3-5-sonnet-20241022',
+                    max_tokens: 1024,
+                    system: systemPrompt,
+                    messages: [{ role: 'user', content: userPrompt }]
+                };
+
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'x-api-key': STATE.apiKey,
+                        'anthropic-version': '2023-06-01',
+                        'content-type': 'application/json',
+                        'anthropic-dangerous-direct-browser-access': 'true' // Helpful if bypassing strict client-side checks
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                    const err = await res.json().catch(()=>({}));
+                    throw new Error(`Claude API Error: ${res.status} ${err.error?.message || res.statusText}`);
+                }
+                const data = await res.json();
+                return data.content[0].text;
+            } else {
+                // Gemini Default
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${STATE.apiKey}`;
+                const payload = {
+                    system_instruction: { parts: [{ text: systemPrompt }] },
+                    contents: [{ parts: [{ text: userPrompt }] }]
+                };
+                
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!res.ok) {
+                    const err = await res.json().catch(()=>({}));
+                    throw new Error(`Gemini API Error: ${res.status} ${err.error?.message || res.statusText}`);
+                }
+                const data = await res.json();
+                return data.candidates[0].content.parts[0].text;
+            }
+        }
+
+        function buildSystemPrompt(bot) {
+            let prompt = STATE.autoPilot.basePrompt + "\n";
+            if (STATE.autoPilot.directive) {
+                prompt += `\nCRITICAL DIRECTIVE: ${STATE.autoPilot.directive}\n`;
+            }
+            prompt += `\nYour Persona Configuration: ${bot.persona}\nYour Character Details: ${bot.characters}\n`;
+            return prompt;
+        }
+
+        // --- WALLET CONNECT ENGINE ---
         const NWC_HANDSHAKE_TIMEOUT_MS = 20000; 
         const NWC_REQUEST_TIMEOUT_MS = 20000;   
         const NWC_MAX_RETRIES = 2;              
         const NWC_RETRY_BASE_DELAY_MS = 1500;   
-
         let _NWCClientClass = null; 
 
         async function loadAlbySDK() {
             if (_NWCClientClass) return _NWCClientClass;
-
             const SDK_VERSION = "3.7.1";
             const sources = [
                 `https://esm.sh/@getalby/sdk@${SDK_VERSION}/nwc`,
@@ -785,15 +858,12 @@
                 `https://cdn.jsdelivr.net/npm/@getalby/sdk@${SDK_VERSION}/nwc/+esm`,
                 `https://cdn.jsdelivr.net/npm/@getalby/sdk@${SDK_VERSION}/+esm`
             ];
-
             let lastErr = null;
             for (const url of sources) {
                 try {
                     const mod = await import(url);
                     const ClientClass = mod.NWCClient || (mod.nwc && mod.nwc.NWCClient) || mod.default?.NWCClient;
-                    if (typeof ClientClass !== 'function') {
-                        throw new Error("Module loaded but NWCClient export was not found.");
-                    }
+                    if (typeof ClientClass !== 'function') throw new Error("Module loaded but NWCClient export was not found.");
                     _NWCClientClass = ClientClass;
                     logEvent("WALLET", "SYSTEM", `Alby SDK loaded from ${url}`);
                     return ClientClass;
@@ -816,23 +886,17 @@
         function validateNwcUrl(rawUrl) {
             if (!rawUrl || typeof rawUrl !== 'string') return { valid: false, error: "Connection string is empty." };
             const trimmed = rawUrl.trim();
-            if (!/^nostr\+?walletconnect:\/\//i.test(trimmed)) {
-                return { valid: false, error: "Must start with nostr+walletconnect://" };
-            }
+            if (!/^nostr\+?walletconnect:\/\//i.test(trimmed)) return { valid: false, error: "Must start with nostr+walletconnect://" };
             try {
                 const normalized = trimmed.replace(/^nostr\+?walletconnect:\/\//i, 'https://');
                 const parsed = new URL(normalized);
                 const pubkey = (parsed.hostname || parsed.pathname.replace(/^\//, '')).toLowerCase();
-                if (!/^[0-9a-f]{64}$/.test(pubkey)) {
-                    return { valid: false, error: "Wallet pubkey must be 64 hex characters." };
-                }
+                if (!/^[0-9a-f]{64}$/.test(pubkey)) return { valid: false, error: "Wallet pubkey must be 64 hex characters." };
                 const relay = parsed.searchParams.get('relay');
                 const secret = parsed.searchParams.get('secret');
                 if (!relay) return { valid: false, error: "Missing relay= parameter." };
                 if (!/^wss?:\/\//i.test(relay)) return { valid: false, error: "relay= must be a ws:// or wss:// URL." };
-                if (!secret || !/^[0-9a-f]{64}$/i.test(secret)) {
-                    return { valid: false, error: "Missing or invalid secret= parameter (must be 64 hex characters)." };
-                }
+                if (!secret || !/^[0-9a-f]{64}$/i.test(secret)) return { valid: false, error: "Missing or invalid secret= parameter (must be 64 hex characters)." };
                 return { valid: true };
             } catch (e) {
                 return { valid: false, error: `Malformed connection string: ${e.message}` };
@@ -841,9 +905,7 @@
 
         function withTimeout(promise, ms, timeoutMessage) {
             let timer;
-            const timeout = new Promise((_, reject) => {
-                timer = setTimeout(() => reject(new Error(timeoutMessage)), ms);
-            });
+            const timeout = new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(timeoutMessage)), ms); });
             return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
         }
 
@@ -851,14 +913,11 @@
             const badge = $('wallet-status-badge');
             if (!badge) return;
             if (STATE.wallet.connecting) {
-                badge.textContent = "CONNECTING…";
-                badge.className = "status-badge badge-dvm";
+                badge.textContent = "CONNECTING…"; badge.className = "status-badge badge-dvm";
             } else if (STATE.wallet.connected) {
-                badge.textContent = "CONNECTED";
-                badge.className = "status-badge badge-on";
+                badge.textContent = "CONNECTED"; badge.className = "status-badge badge-on";
             } else {
-                badge.textContent = "DISCONNECTED";
-                badge.className = "status-badge badge-off";
+                badge.textContent = "DISCONNECTED"; badge.className = "status-badge badge-off";
             }
 
             const infoLine = $('wallet-info-line');
@@ -878,7 +937,6 @@
                     infoLine.textContent = '';
                 }
             }
-
             if (STATE.wallet.lastBalanceAt) {
                 const el = $('wallet-balance-updated');
                 if (el) el.textContent = `Last checked: ${new Date(STATE.wallet.lastBalanceAt).toLocaleTimeString('en-US', { hour12: false })}`;
@@ -886,92 +944,55 @@
         }
 
         function resetWalletConnection() {
-            if (STATE.wallet.client) {
-                try { STATE.wallet.client.close(); } catch (e) { /* already closed / never opened */ }
-            }
-            STATE.wallet.client = null;
-            STATE.wallet.connected = false;
-            STATE.wallet.supportedMethods = [];
-            STATE.wallet.walletAlias = null;
+            if (STATE.wallet.client) { try { STATE.wallet.client.close(); } catch (e) { } }
+            STATE.wallet.client = null; STATE.wallet.connected = false;
+            STATE.wallet.supportedMethods = []; STATE.wallet.walletAlias = null;
             updateWalletStatusUI();
         }
 
         async function ensureWalletConnected(forceReconnect = false) {
-            if (STATE.wallet.connected && STATE.wallet.client && !forceReconnect) {
-                return STATE.wallet.client;
-            }
-
+            if (STATE.wallet.connected && STATE.wallet.client && !forceReconnect) return STATE.wallet.client;
             if (STATE.wallet.connecting) {
-                while (STATE.wallet.connecting) {
-                    await new Promise(r => setTimeout(r, 150));
-                }
-                if (STATE.wallet.connected && STATE.wallet.client && !forceReconnect) {
-                    return STATE.wallet.client;
-                }
+                while (STATE.wallet.connecting) await new Promise(r => setTimeout(r, 150));
+                if (STATE.wallet.connected && STATE.wallet.client && !forceReconnect) return STATE.wallet.client;
             }
 
             const check = validateNwcUrl(STATE.wallet.nwcUrl);
-            if (!check.valid) {
-                throw new Error(`Invalid NWC connection string: ${check.error}`);
-            }
+            if (!check.valid) throw new Error(`Invalid NWC connection string: ${check.error}`);
 
-            STATE.wallet.connecting = true;
-            updateWalletStatusUI();
+            STATE.wallet.connecting = true; updateWalletStatusUI();
             try {
                 resetWalletConnection();
-
                 const NWCClient = await loadAlbySDK();
                 const client = new NWCClient({ nostrWalletConnectUrl: STATE.wallet.nwcUrl });
 
                 const info = await withTimeout(
-                    client.getInfo(),
-                    NWC_HANDSHAKE_TIMEOUT_MS,
-                    `Wallet did not respond to the initial handshake (get_info) within ${(NWC_HANDSHAKE_TIMEOUT_MS / 1000).toFixed(0)}s. The relay accepted the connection, but the wallet service behind it never answered — check that the wallet app / Alby Hub is online, and that this NWC connection hasn't been revoked.`
+                    client.getInfo(), NWC_HANDSHAKE_TIMEOUT_MS,
+                    `Wallet did not respond to the initial handshake (get_info) within ${(NWC_HANDSHAKE_TIMEOUT_MS / 1000).toFixed(0)}s.`
                 );
 
-                STATE.wallet.client = client;
-                STATE.wallet.connected = true;
+                STATE.wallet.client = client; STATE.wallet.connected = true;
                 STATE.wallet.supportedMethods = Array.isArray(info?.methods) ? info.methods : [];
                 STATE.wallet.walletAlias = info?.alias || null;
 
                 logEvent("WALLET", "SYSTEM", `Wallet handshake OK${info?.alias ? ` (${info.alias})` : ''}. Supported methods: ${STATE.wallet.supportedMethods.join(', ') || 'none reported'}.`);
-                if (!STATE.wallet.supportedMethods.includes('get_balance')) {
-                    logEvent("ERROR", "WALLET", "This connection is NOT authorized for get_balance — checking balance will always time out. Re-authorize the NWC connection in Alby with that permission enabled.");
-                }
-                if (!STATE.wallet.supportedMethods.includes('make_invoice')) {
-                    logEvent("ERROR", "WALLET", "This connection is NOT authorized for make_invoice — creating invoices will always time out. Re-authorize the NWC connection in Alby with that permission enabled.");
-                }
-
                 return client;
             } catch (e) {
-                STATE.wallet.client = null;
-                STATE.wallet.connected = false;
-                throw e;
+                STATE.wallet.client = null; STATE.wallet.connected = false; throw e;
             } finally {
-                STATE.wallet.connecting = false;
-                updateWalletStatusUI();
+                STATE.wallet.connecting = false; updateWalletStatusUI();
             }
         }
 
         async function executeWalletRequest(operationName, requestFn) {
-            let attempt = 0;
-            let lastError;
+            let attempt = 0; let lastError;
             while (attempt <= NWC_MAX_RETRIES) {
                 try {
                     const client = await ensureWalletConnected(attempt > 0);
-                    const result = await withTimeout(
-                        requestFn(client),
-                        NWC_REQUEST_TIMEOUT_MS,
-                        `${operationName} timed out after ${(NWC_REQUEST_TIMEOUT_MS / 1000).toFixed(0)}s — the wallet service did not respond in time.`
-                    );
-                    return result;
+                    return await withTimeout(requestFn(client), NWC_REQUEST_TIMEOUT_MS, `${operationName} timed out after ${(NWC_REQUEST_TIMEOUT_MS / 1000).toFixed(0)}s.`);
                 } catch (e) {
-                    lastError = e;
-                    attempt++;
-                    resetWalletConnection();
-
+                    lastError = e; attempt++; resetWalletConnection();
                     if (attempt > NWC_MAX_RETRIES) break;
-
                     const delay = NWC_RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1);
                     logEvent("WALLET", "SYSTEM", `${operationName} failed (attempt ${attempt}/${NWC_MAX_RETRIES + 1}): ${formatWalletError(e)} — retrying in ${(delay / 1000).toFixed(1)}s...`);
                     await new Promise(r => setTimeout(r, delay));
@@ -985,24 +1006,18 @@
             logEvent("WALLET", "SYSTEM", "Requesting balance via NWC get_balance...");
             try {
                 await ensureWalletConnected();
-                if (!STATE.wallet.supportedMethods.includes('get_balance')) {
-                    throw new Error("This NWC connection is not authorized for get_balance (see supported-methods line above). Re-authorize it in Alby's Connected Apps settings.");
-                }
-
+                if (!STATE.wallet.supportedMethods.includes('get_balance')) throw new Error("This NWC connection is not authorized for get_balance.");
                 const result = await executeWalletRequest("get_balance", (client) => client.getBalance());
                 const balanceMsat = typeof result?.balance === 'number' ? result.balance : 0;
                 const sats = Math.round(balanceMsat / 1000);
-                STATE.wallet.lastBalance = sats;
-                STATE.wallet.lastBalanceAt = Date.now();
+                STATE.wallet.lastBalance = sats; STATE.wallet.lastBalanceAt = Date.now();
                 $('wallet-balance-val').textContent = `${sats.toLocaleString()} sats`;
                 logEvent("OK", "SYSTEM", `Wallet balance retrieved: ${sats.toLocaleString()} sats.`);
             } catch (e) {
-                $('wallet-balance-val').textContent = "ERROR";
-                logEvent("ERROR", "WALLET", `Balance check failed: ${formatWalletError(e)}`);
+                $('wallet-balance-val').textContent = "ERROR"; logEvent("ERROR", "WALLET", `Balance check failed: ${formatWalletError(e)}`);
                 alert(`Failed to retrieve wallet balance:\n\n${formatWalletError(e)}`);
             } finally {
-                setBusy(false);
-                updateWalletStatusUI();
+                setBusy(false); updateWalletStatusUI();
             }
         }
 
@@ -1011,36 +1026,25 @@
             const memo = $('wallet-invoice-memo').value.trim();
             const amountSats = parseInt(amountRaw, 10);
 
-            if (!amountRaw || isNaN(amountSats) || amountSats <= 0) {
-                return alert("Enter a valid invoice amount in sats (a positive whole number).");
-            }
-            if (amountSats > 100000000 && !confirm(`You're creating an invoice for ${amountSats.toLocaleString()} sats (1 BTC or more). Continue?`)) {
-                return;
-            }
+            if (!amountRaw || isNaN(amountSats) || amountSats <= 0) return alert("Enter a valid invoice amount in sats (a positive whole number).");
+            if (amountSats > 100000000 && !confirm(`You're creating an invoice for ${amountSats.toLocaleString()} sats (1 BTC or more). Continue?`)) return;
 
             setBusy(true, "GENERATING INVOICE");
             logEvent("WALLET", "SYSTEM", `Requesting invoice for ${amountSats.toLocaleString()} sats via NWC make_invoice...`);
             try {
                 await ensureWalletConnected();
-                if (!STATE.wallet.supportedMethods.includes('make_invoice')) {
-                    throw new Error("This NWC connection is not authorized for make_invoice (see supported-methods line above). Re-authorize it in Alby's Connected Apps settings.");
-                }
-
+                if (!STATE.wallet.supportedMethods.includes('make_invoice')) throw new Error("This NWC connection is not authorized for make_invoice.");
                 const result = await executeWalletRequest("make_invoice", (client) =>
                     client.makeInvoice({ amount: amountSats * 1000, description: memo || undefined })
                 );
                 const bolt11 = result?.invoice;
                 if (!bolt11) throw new Error("Wallet service returned an empty invoice.");
-
-                $('wallet-invoice-output').value = bolt11;
-                $('wallet-invoice-output-wrap').style.display = 'block';
+                $('wallet-invoice-output').value = bolt11; $('wallet-invoice-output-wrap').style.display = 'block';
                 logEvent("OK", "SYSTEM", `Invoice generated for ${amountSats.toLocaleString()} sats.`);
             } catch (e) {
-                logEvent("ERROR", "WALLET", `Invoice creation failed: ${formatWalletError(e)}`);
-                alert(`Failed to create invoice:\n\n${formatWalletError(e)}`);
+                logEvent("ERROR", "WALLET", `Invoice creation failed: ${formatWalletError(e)}`); alert(`Failed to create invoice:\n\n${formatWalletError(e)}`);
             } finally {
-                setBusy(false);
-                updateWalletStatusUI();
+                setBusy(false); updateWalletStatusUI();
             }
         }
 
@@ -1069,15 +1073,285 @@
             if(confirm(`WARNING: Are you sure you want to permanently remove identity [ ${bid} ]?`)) {
                 delete STATE.bots[bid];
                 if(STATE.activeBotId === bid) {
-                    STATE.activeBotId = null;
-                    $('active-bot-display').textContent = "AWAITING SELECTION";
+                    STATE.activeBotId = null; $('active-bot-display').textContent = "AWAITING SELECTION";
                 }
-                saveBots();
-                renderBotRoster();
+                saveBots(); renderBotRoster();
                 $('manage-bots-txt').value = JSON.stringify(STATE.bots, null, 2);
                 logEvent("INFO", "SYSTEM", `Identity ${bid} successfully purged.`);
             }
         };
+
+        function setupTabs() {
+            document.querySelectorAll('.tab-link').forEach(btn => {
+                btn.onclick = (e) => {
+                    document.querySelectorAll('.tab-link').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    e.target.classList.add('active');
+                    $(e.target.dataset.tab).classList.add('active');
+                }
+            });
+        }
+
+        function setupEventListeners() {
+            setupTabs();
+            $('btn-post').onclick = broadcastNote;
+            $('btn-reply').onclick = sendReply;
+            $('btn-fetch-feed').onclick = fetchGlobalFeed;
+            $('btn-check-mentions').onclick = checkMentions;
+            $('btn-scan-dvm').onclick = fetchDVMJobs;
+            
+            // LLM Settings Setup
+            $('btn-save-api').onclick = () => {
+                STATE.apiKey = $('api-key-ent').value.trim();
+                STATE.llmProvider = $('llm-provider-sel').value;
+                STATE.proxyUrl = $('api-proxy-ent').value.trim();
+                localStorage.setItem('swarm_api_key', STATE.apiKey);
+                localStorage.setItem('swarm_llm_provider', STATE.llmProvider);
+                localStorage.setItem('swarm_api_proxy', STATE.proxyUrl);
+                logEvent("INFO", "SYSTEM", "LLM Integration credentials secured to local storage.");
+            };
+
+            // AI Synthesis
+            $('btn-ai-compose').onclick = async () => {
+                if (!STATE.activeBotId) return alert("Select an Identity.");
+                setBusy(true, "SYNTHESIZING...");
+                try {
+                    const p = buildSystemPrompt(STATE.bots[STATE.activeBotId]);
+                    const u = "Generate a new standalone payload message matching your persona. Avoid wrapping in quotes.";
+                    const txt = await generateAIContent(p, u);
+                    $('compose-txt').value = txt;
+                    $('char-count-lbl').textContent = `${txt.length} bytes`;
+                    logEvent("INFO", STATE.activeBotId, "Payload synthesized successfully.");
+                } catch(e) { alert(e.message); logEvent("ERROR", STATE.activeBotId, e.message); }
+                setBusy(false);
+            };
+            
+            $('btn-ai-reply').onclick = async () => {
+                if (!STATE.activeBotId) return alert("Select an Identity.");
+                let targetHex = $('reply-id-ent').value.trim();
+                if(!targetHex) return alert("Enter Target Event ID first.");
+                setBusy(true, "SYNTHESIZING...");
+                try {
+                    if (targetHex.startsWith('note1')) targetHex = nip19.decode(targetHex).data;
+                    const parentEvt = await STATE.pool.get(STATE.relays, { ids: [targetHex] });
+                    if (!parentEvt) throw new Error("Target node unresolvable.");
+                    const p = buildSystemPrompt(STATE.bots[STATE.activeBotId]);
+                    const u = `REPLY TO THIS NETWORK EVENT:\n\nMessage: "${parentEvt.content}"\n\nProvide an in-character reply. DO NOT wrap in quotes.`;
+                    const txt = await generateAIContent(p, u);
+                    $('reply-txt').value = txt;
+                    logEvent("INFO", STATE.activeBotId, "Reply payload synthesized.");
+                } catch(e) { alert(e.message); logEvent("ERROR", STATE.activeBotId, e.message); }
+                setBusy(false);
+            };
+
+            // Identity Generation
+            $('btn-generate-bot').onclick = () => {
+                const bid = "bot_" + (Object.keys(STATE.bots).length + 1) + "_" + Math.floor(Math.random()*1000);
+                STATE.bots[bid] = generateNewBotObj();
+                saveBots(); renderBotRoster();
+                $('manage-bots-txt').value = JSON.stringify(STATE.bots, null, 2);
+                logEvent("INFO", "SYSTEM", `Provisioned generic identity: ${bid}`);
+            };
+
+            $('btn-generate-ai-bot').onclick = async () => {
+                setBusy(true, "SYNTHESIZING IDENTITY...");
+                try {
+                    const u = "Generate a JSON array containing one object with 'persona' and 'characters' keys. Create a highly unique, deeply specific esoteric or professional AI persona description (comma separated stats for persona, e.g. 'cynical, ai, 0, analyst, iq:140'). Characters is a 1-2 sentence background.";
+                    const p = "You are a data generator. Output raw JSON only. No markdown, no comments.";
+                    const txt = await generateAIContent(p, u);
+                    const parsed = JSON.parse(txt.replace(/```json/g,'').replace(/```/g,'').trim());
+                    
+                    const bid = "bot_" + (Object.keys(STATE.bots).length + 1) + "_" + Math.floor(Math.random()*1000);
+                    const botObj = generateNewBotObj();
+                    botObj.persona = parsed[0]?.persona || parsed.persona;
+                    botObj.characters = parsed[0]?.characters || parsed.characters;
+                    STATE.bots[bid] = botObj;
+                    
+                    saveBots(); renderBotRoster();
+                    $('manage-bots-txt').value = JSON.stringify(STATE.bots, null, 2);
+                    logEvent("INFO", "SYSTEM", `Synthesized new identity: ${bid}`);
+                } catch(e) { alert("Synthesis failed: " + e.message); logEvent("ERROR", "SYSTEM", e.message); }
+                setBusy(false);
+            };
+
+            // Utilities
+            $('btn-clear-compose').onclick = () => { $('compose-txt').value = ''; $('char-count-lbl').textContent = '0 bytes'; };
+            $('compose-txt').oninput = (e) => $('char-count-lbl').textContent = `${e.target.value.length} bytes`;
+            $('btn-clear-reply').onclick = () => $('reply-txt').value = '';
+            $('btn-clear-history').onclick = () => { if(confirm("Purge local telemetry archive?")) { STATE.publishedHistory = []; saveHistory(); renderHistory(); } };
+            $('btn-clear-log').onclick = () => $('event-log').innerHTML = '';
+            $('theme-selector').onchange = (e) => { document.body.className = e.target.value; localStorage.setItem('swarm_theme', e.target.value); };
+            $('bot-search').oninput = (e) => renderBotRoster(e.target.value.trim().toLowerCase());
+            
+            $('btn-save-prompts').onclick = () => {
+                STATE.autoPilot.basePrompt = $('prompt-base-txt').value.trim();
+                STATE.autoPilot.directive = $('prompt-directive-txt').value.trim();
+                STATE.autoPilot.dvmEnabled = $('chk-dvm-auto').checked;
+                saveAutoSettings();
+                logEvent("INFO", "SYSTEM", "Prompt and Autopilot parameters secured.");
+            };
+
+            $('btn-save-bots').onclick = () => {
+                try {
+                    STATE.bots = JSON.parse($('manage-bots-txt').value);
+                    saveBots(); renderBotRoster();
+                    logEvent("INFO", "SYSTEM", "Identity manifest successfully applied.");
+                } catch(e) { alert("Invalid JSON manifest."); }
+            };
+            $('btn-export-bots').onclick = () => { $('manage-bots-txt').value = JSON.stringify(STATE.bots, null, 2); logEvent("INFO", "SYSTEM", "Identity manifest exported to buffer."); };
+
+            // Wallet
+            $('btn-wallet-save').onclick = () => {
+                STATE.wallet.nwcUrl = $('wallet-nwc-url').value.trim();
+                localStorage.setItem('swarm_wallet_nwc_url', STATE.wallet.nwcUrl);
+                logEvent("INFO", "WALLET", "NWC string saved to local storage.");
+            };
+            $('btn-wallet-connect').onclick = () => { ensureWalletConnected(true).catch(e => alert(formatWalletError(e))); };
+            $('btn-wallet-disconnect').onclick = () => {
+                resetWalletConnection();
+                $('wallet-nwc-url').value = ''; STATE.wallet.nwcUrl = ''; localStorage.removeItem('swarm_wallet_nwc_url');
+                logEvent("INFO", "WALLET", "Wallet disconnected.");
+            };
+            $('btn-wallet-balance').onclick = checkWalletBalance;
+            $('btn-wallet-invoice').onclick = createWalletInvoice;
+            $('btn-wallet-copy-invoice').onclick = () => { navigator.clipboard.writeText($('wallet-invoice-output').value); logEvent("INFO", "SYSTEM", "Invoice copied to clipboard."); };
+
+            // Relay
+            $('btn-add-relay').onclick = () => {
+                const r = $('relay-add-ent').value.trim();
+                if(r && !STATE.relays.includes(r)) { STATE.relays.push(r); renderRelays(); logEvent("INFO", "SYSTEM", `Relay added: ${r}`); }
+            };
+            $('btn-remove-relay').onclick = () => {
+                const sel = $('relay-listbox').value;
+                if(sel) { STATE.relays = STATE.relays.filter(r => r !== sel); renderRelays(); logEvent("INFO", "SYSTEM", `Relay removed: ${sel}`); }
+            };
+
+            // Autopilot Timers
+            $('btn-auto-start').onclick = () => toggleAutopilot(true);
+            $('btn-auto-stop').onclick = () => toggleAutopilot(false);
+            $('auto-interval-sel').onchange = (e) => {
+                STATE.autoPilot.intervalMs = parseInt(e.target.value);
+                saveAutoSettings();
+                if(STATE.autoPilot.enabled) toggleAutopilot(true); 
+            };
+        }
+
+        function toggleAutopilot(enable) {
+            STATE.autoPilot.enabled = enable;
+            saveAutoSettings();
+            
+            const badge = $('auto-status-badge');
+            if (enable) {
+                badge.textContent = "ACTIVE";
+                badge.className = "status-badge badge-on";
+                logEvent("INFO", "SYSTEM", `Autopilot engaged. Interval: ${STATE.autoPilot.intervalMs}ms`);
+                if(STATE.autoPilot.timerId) clearInterval(STATE.autoPilot.timerId);
+                runAutonomousTick();
+                STATE.autoPilot.timerId = setInterval(runAutonomousTick, STATE.autoPilot.intervalMs);
+            } else {
+                badge.textContent = "SUSPENDED";
+                badge.className = "status-badge badge-off";
+                if(STATE.autoPilot.timerId) { clearInterval(STATE.autoPilot.timerId); STATE.autoPilot.timerId = null; }
+                logEvent("INFO", "SYSTEM", "Autopilot suspended.");
+            }
+        }
+
+        async function runAutonomousTick() {
+            if (!STATE.autoPilot.enabled) return;
+            const botIds = Object.keys(STATE.bots);
+            if(botIds.length === 0) return;
+            
+            const botId = botIds[Math.floor(Math.random() * botIds.length)];
+            const bot = STATE.bots[botId];
+            const sk = getSecKeyBytes(bot.nsec);
+            if (!sk) return;
+            
+            const pubkey = getPublicKey(sk);
+            const systemPrompt = buildSystemPrompt(bot);
+            
+            logEvent("INFO", botId, `[AUTOPILOT TICK] Initiating autonomous execution loop...`);
+
+            try {
+                // Priority 1: Mentions & Reply Interception
+                let events = await STATE.pool.querySync(STATE.relays, { kinds: [1], '#p': [pubkey], limit: 20 });
+                events.sort((a, b) => b.created_at - a.created_at);
+                
+                let unrepliedMentions = events.filter(e => {
+                    const noteId = nip19.noteEncode(e.id);
+                    return e.pubkey !== pubkey && !STATE.repliedEvents[noteId] && !STATE.repliedEvents[e.id];
+                });
+
+                if (unrepliedMentions.length > 0) {
+                    const target = unrepliedMentions[0];
+                    logEvent("INFO", botId, `[AUTOPILOT] Priority 1: Intercepting mention ${target.id.substring(0, 8)}...`);
+                    const userPrompt = `RESPOND TO THIS MENTION:\n\nUser Message: "${target.content}"\n\nProvide an in-character reply. DO NOT wrap in quotes.`;
+                    const replyText = await generateAIContent(systemPrompt, userPrompt);
+                    
+                    if (replyText) {
+                        const noteId = await publishNote(botId, stripUrls(replyText), target.id, target.pubkey, target.content);
+                        awardXP(botId, target.id, 10);
+                        logEvent("OK", botId, `[AUTOPILOT] Mention resolved successfully. Tx: ${noteId}`);
+                        return; // Exit early
+                    }
+                }
+
+                // Priority 1.5: DVM Jobs (If enabled)
+                if (STATE.autoPilot.dvmEnabled) {
+                    let dvmEvents = await STATE.pool.querySync(STATE.relays, { kinds: [5050], limit: 5 });
+                    let unrepliedDvm = dvmEvents.filter(e => !STATE.repliedEvents[e.id]).sort((a, b) => b.created_at - a.created_at);
+                    if (unrepliedDvm.length > 0) {
+                        const target = unrepliedDvm[0];
+                        logEvent("INFO", botId, `[AUTOPILOT] Auto-Intercepting DVM Job ${target.id.substring(0, 8)}...`);
+                        await processDVMEvent(target, botId, null);
+                        return;
+                    }
+                }
+
+                // Priority 2: Baseline Fallback Strategy
+                logEvent("INFO", botId, `[AUTOPILOT] Priority 2: Executing fallback probability matrix...`);
+                const rand = Math.random();
+                if (rand < 0.3) {
+                    logEvent("INFO", botId, `[AUTOPILOT] Triggered 30% Standalone Post synthesis...`);
+                    const userPrompt = `Generate a standalone status update based on your persona. DO NOT wrap in quotes. Avoid hashtags.`;
+                    const postText = await generateAIContent(systemPrompt, userPrompt);
+                    if (postText) {
+                        const noteId = await publishNote(botId, stripUrls(postText));
+                        awardXP(botId, 'post_' + noteId, 5); 
+                        logEvent("OK", botId, `[AUTOPILOT] Standalone post deployed. Tx: ${noteId}`);
+                    }
+                } else {
+                    logEvent("INFO", botId, `[AUTOPILOT] Triggered 70% Reply network scan...`);
+                    let feed = await STATE.pool.querySync(STATE.relays, { kinds: [1], limit: 40 });
+                    feed.sort((a, b) => b.created_at - a.created_at);
+                    
+                    const botPubkeys = new Set(Object.values(STATE.bots).map(b => { 
+                        const k = getSecKeyBytes(b.nsec); return k ? getPublicKey(k) : null; 
+                    }).filter(Boolean));
+                    
+                    let viableTargets = feed.filter(e => {
+                        const noteId = nip19.noteEncode(e.id);
+                        return !botPubkeys.has(e.pubkey) && !STATE.repliedEvents[noteId] && !STATE.repliedEvents[e.id] && !e.tags.some(t => t[0] === 'e') && e.content.length < 250;
+                    });
+
+                    if (viableTargets.length > 0) {
+                        const target = viableTargets[Math.floor(Math.random() * viableTargets.length)];
+                        logEvent("INFO", botId, `[AUTOPILOT] Intercepting network node ${target.id.substring(0,8)}...`);
+                        
+                        const userPrompt = `REPLY TO THIS NETWORK EVENT:\n\nMessage: "${target.content}"\n\nProvide an in-character reply. Keep it relevant to their statement. DO NOT wrap in quotes.`;
+                        const replyText = await generateAIContent(systemPrompt, userPrompt);
+                        if (replyText) {
+                            const noteId = await publishNote(botId, stripUrls(replyText), target.id, target.pubkey, target.content);
+                            awardXP(botId, target.id, 10);
+                            logEvent("OK", botId, `[AUTOPILOT] Threaded reply deployed. Tx: ${noteId}`);
+                        }
+                    } else {
+                        logEvent("INFO", botId, `[AUTOPILOT] No viable targets found in standard limits. Idling...`);
+                    }
+                }
+            } catch (err) {
+                logEvent("ERROR", botId, `[AUTOPILOT] Execution cycle failed: ${err.message}`);
+            }
+        }
 
         function initApp() {
             loadPersistence();
@@ -1086,32 +1360,30 @@
             renderBotRoster();
             renderHistory();
             
-            if ($('manage-bots-txt').value.trim() === '') {
-                $('manage-bots-txt').value = JSON.stringify(STATE.bots, null, 2);
-            }
-            
+            if ($('manage-bots-txt').value.trim() === '') $('manage-bots-txt').value = JSON.stringify(STATE.bots, null, 2);
             $('prompt-base-txt').value = STATE.autoPilot.basePrompt;
             $('prompt-directive-txt').value = STATE.autoPilot.directive;
             $('auto-interval-sel').value = STATE.autoPilot.intervalMs.toString();
             $('chk-dvm-auto').checked = STATE.autoPilot.dvmEnabled;
+            
             updateWalletStatusUI();
-
             logEvent("INFO", "SYSTEM", `Manager UI initialized. ${Object.keys(STATE.bots).length} distinct identities online.`);
         }
 
-        window.addEventListener('beforeunload', () => {
-            if (STATE.wallet.client) { try { STATE.wallet.client.close(); } catch (e) { /* noop */ } }
-        });
+        window.addEventListener('beforeunload', () => { if (STATE.wallet.client) { try { STATE.wallet.client.close(); } catch (e) { } } });
 
         function loadPersistence() {
             const savedTheme = localStorage.getItem('swarm_theme');
-            if (savedTheme) {
-                document.body.className = savedTheme;
-                $('theme-selector').value = savedTheme;
-            }
+            if (savedTheme) { document.body.className = savedTheme; $('theme-selector').value = savedTheme; }
 
-            const savedKey = localStorage.getItem('swarm_api_key');
-            if (savedKey) { STATE.apiKey = savedKey; $('api-key-ent').value = savedKey; }
+            const savedApiKey = localStorage.getItem('swarm_api_key');
+            if (savedApiKey) { STATE.apiKey = savedApiKey; $('api-key-ent').value = savedApiKey; }
+            
+            const savedProvider = localStorage.getItem('swarm_llm_provider');
+            if (savedProvider) { STATE.llmProvider = savedProvider; $('llm-provider-sel').value = savedProvider; }
+
+            const savedProxy = localStorage.getItem('swarm_api_proxy');
+            if (savedProxy) { STATE.proxyUrl = savedProxy; $('api-proxy-ent').value = savedProxy; }
 
             const savedNwcUrl = localStorage.getItem('swarm_wallet_nwc_url');
             if (savedNwcUrl) { STATE.wallet.nwcUrl = savedNwcUrl; $('wallet-nwc-url').value = savedNwcUrl; }
@@ -1120,14 +1392,9 @@
             if (savedRelays) STATE.relays = JSON.parse(savedRelays);
             
             const savedBots = localStorage.getItem('swarm_bots');
-            if (savedBots) { 
-                try { STATE.bots = JSON.parse(savedBots); } catch(e){} 
-            } 
+            if (savedBots) { try { STATE.bots = JSON.parse(savedBots); } catch(e){} } 
             
-            if (Object.keys(STATE.bots).length === 0) {
-                STATE.bots = { "bot_1": generateNewBotObj() };
-                saveBots();
-            }
+            if (Object.keys(STATE.bots).length === 0) { STATE.bots = { "bot_1": generateNewBotObj() }; saveBots(); }
 
             const savedReplied = localStorage.getItem('swarm_replied');
             if (savedReplied) { try { STATE.repliedEvents = JSON.parse(savedReplied); } catch(e){} }
@@ -1137,9 +1404,7 @@
             if (savedXpTracked) { try { STATE.xpTrackedEvents = JSON.parse(savedXpTracked); } catch(e){} }
 
             const savedHistory = localStorage.getItem('swarm_history');
-            if (savedHistory) {
-                try { STATE.publishedHistory = JSON.parse(savedHistory); } catch(e){}
-            }
+            if (savedHistory) { try { STATE.publishedHistory = JSON.parse(savedHistory); } catch(e){} }
 
             const savedAuto = localStorage.getItem('swarm_auto_settings');
             if(savedAuto) {
@@ -1154,9 +1419,7 @@
         }
 
         function saveBots() { localStorage.setItem('swarm_bots', JSON.stringify(STATE.bots)); }
-        
         function saveHistory() { localStorage.setItem('swarm_history', JSON.stringify(STATE.publishedHistory)); }
-
         function saveAutoSettings() {
             localStorage.setItem('swarm_auto_settings', JSON.stringify({
                 basePrompt: STATE.autoPilot.basePrompt,
@@ -1175,8 +1438,7 @@
         }
 
         function renderBotRoster(filterText = "") {
-            const list = $('bot-list');
-            list.innerHTML = "";
+            const list = $('bot-list'); list.innerHTML = "";
             Object.keys(STATE.bots).sort((a,b) => (parseInt(a.split('_')[1] || 0) - parseInt(b.split('_')[1] || 0))).forEach(bid => {
                 const bot = STATE.bots[bid];
                 const personaStr = (bot.persona || "").toLowerCase();
@@ -1222,11 +1484,8 @@
         }
 
         function renderRelays() {
-            const lb = $('relay-listbox');
-            lb.innerHTML = "";
-            STATE.relays.forEach(r => {
-                const opt = document.createElement('option'); opt.value = r; opt.text = r; lb.appendChild(opt);
-            });
+            const lb = $('relay-listbox'); lb.innerHTML = "";
+            STATE.relays.forEach(r => { const opt = document.createElement('option'); opt.value = r; opt.text = r; lb.appendChild(opt); });
             localStorage.setItem('swarm_relays', JSON.stringify(STATE.relays));
         }
 
@@ -1234,17 +1493,13 @@
             const container = $('history-container');
             if(!container) return;
             container.innerHTML = "";
-            
             if (STATE.publishedHistory.length === 0) {
                 container.innerHTML = `<div class="dim-text mt-10" style="padding: 16px; text-align: center; border: 1px dashed var(--border); border-radius: 6px;">Telemetry archive empty. No outbound signals recorded.</div>`;
                 return;
             }
-            
             STATE.publishedHistory.forEach(item => {
                 const ts = new Date(item.timestamp * 1000).toLocaleString('en-US', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'});
-                const el = document.createElement('div');
-                el.className = 'note-card';
-                
+                const el = document.createElement('div'); el.className = 'note-card';
                 let contextHtml = '';
                 if (item.type === 'REPLY' || item.type === 'DVM_RESULT' || item.type === 'DVM_FEEDBACK') {
                     const parentText = item.parentContent ? item.parentContent.replace(/</g,'&lt;') : "Original context payload unavailable or untracked.";
@@ -1255,7 +1510,6 @@
                         </div>
                     `;
                 }
-
                 el.innerHTML = `
                     <div class="note-header">
                         <span style="color: var(--text); font-weight: 700; font-size: 14px; text-transform: uppercase;">[ ${item.botId.replace('_', ' ')} ]</span>
@@ -1279,17 +1533,9 @@
             if (!sk) throw new Error("Invalid cryptographic key configuration.");
             
             let tags = [];
-            if (parentHex && parentPubkey) {
-                tags.push(["e", parentHex, "", "reply"]);
-                tags.push(["p", parentPubkey]);
-            }
-            if (eventKind === 6050) {
-                tags.push(["status", "success"]);
-            }
-            
-            if (extraTags && extraTags.length > 0) {
-                tags.push(...extraTags);
-            }
+            if (parentHex && parentPubkey) { tags.push(["e", parentHex, "", "reply"]); tags.push(["p", parentPubkey]); }
+            if (eventKind === 6050) tags.push(["status", "success"]);
+            if (extraTags && extraTags.length > 0) tags.push(...extraTags);
 
             const evtTemplate = { kind: eventKind, created_at: Math.floor(Date.now()/1000), tags, content };
             const signedEvent = finalizeEvent(evtTemplate, sk);
@@ -1304,23 +1550,9 @@
             else if(eventKind === 7000) type = 'DVM_FEEDBACK';
             else if(parentHex) type = 'REPLY';
 
-            STATE.publishedHistory.unshift({
-                id: noteId,
-                hex: signedEvent.id,
-                botId: botId,
-                content: content,
-                parentHex: parentHex,
-                parentContent: parentContent,
-                timestamp: signedEvent.created_at,
-                type: type
-            });
-            
-            if (STATE.publishedHistory.length > 500) {
-                STATE.publishedHistory.pop();
-            }
-            saveHistory();
-            renderHistory();
-
+            STATE.publishedHistory.unshift({ id: noteId, hex: signedEvent.id, botId: botId, content: content, parentHex: parentHex, parentContent: parentContent, timestamp: signedEvent.created_at, type: type });
+            if (STATE.publishedHistory.length > 500) STATE.publishedHistory.pop();
+            saveHistory(); renderHistory();
             return noteId;
         }
 
@@ -1328,7 +1560,6 @@
             if (!STATE.activeBotId) return alert("Focus Target not selected.");
             const content = stripUrls($('compose-txt').value);
             if (!content) return alert("Payload buffer empty.");
-
             setBusy(true, "TRANSMITTING");
             logEvent("POST", STATE.activeBotId, `Tx Payload: ${content.substring(0,60)}...`);
             try {
@@ -1354,22 +1585,45 @@
 
             const content = stripUrls($('reply-txt').value);
             if (!content) return alert("Payload buffer empty.");
-
             setBusy(true, "TRANSMITTING REPLY");
             logEvent("REPLY", STATE.activeBotId, `Targeting: ${replyIdRaw.substring(0,12)}...`);
             try {
                 const parentEvt = await STATE.pool.get(STATE.relays, { ids: [parentHex] });
                 if (!parentEvt) throw new Error("Target node unresolvable on current relay topology.");
-                
                 const noteId = await publishNote(STATE.activeBotId, content, parentHex, parentEvt.pubkey, parentEvt.content);
                 markReplied(replyIdRaw, STATE.activeBotId);
-                
                 logEvent("OK", STATE.activeBotId, `Reply successfully transmitted. ID: ${noteId}`);
                 logEvent("LINK", STATE.activeBotId, `https://njump.me/${noteId}`);
                 $('reply-id-ent').value = ""; $('reply-txt').value = ""; 
                 const ctxLbl = $('reply-ctx-lbl'); ctxLbl.textContent = ""; ctxLbl.style.display = "none";
             } catch(err) { logEvent("ERROR", STATE.activeBotId, `Tx failed: ${err.message}`); }
             setBusy(false);
+        }
+
+        function renderNotesList(containerId, events) {
+            const container = $(containerId);
+            container.innerHTML = "";
+            if (events.length === 0) {
+                container.innerHTML = `<div class="dim-text mt-10" style="padding: 16px; text-align: center; border: 1px dashed var(--border); border-radius: 6px;">No nodes resolved for current parameters.</div>`;
+                return;
+            }
+            events.forEach(e => {
+                const ts = new Date(e.created_at * 1000).toLocaleString('en-US', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+                const el = document.createElement('div');
+                el.className = 'note-card';
+                el.innerHTML = `
+                    <div class="note-header">
+                        <span class="note-author">${nip19.npubEncode(e.pubkey).substring(0, 16)}...</span>
+                        <span class="dim-text">${ts}</span>
+                    </div>
+                    <div class="note-body">${e.content.replace(/</g,'&lt;')}</div>
+                    <div class="flex-between">
+                        <span class="dim-text" style="font-size:11px;">Hex: ${e.id.substring(0,16)}...</span>
+                        <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 11px;" onclick="document.getElementById('reply-id-ent').value='${e.id}'; document.querySelector('[data-tab=\\'tab-reply\\']').click();">TARGET ↳</button>
+                    </div>
+                `;
+                container.appendChild(el);
+            });
         }
 
         async function fetchGlobalFeed() {
@@ -1405,11 +1659,7 @@
                 events.sort((a,b) => b.created_at - a.created_at);
                 
                 let xpGained = false;
-                events.forEach(e => {
-                    if (e.pubkey !== getPublicKey(sk) && awardXP(STATE.activeBotId, e.id, 10)) {
-                        xpGained = true;
-                    }
-                });
+                events.forEach(e => { if (e.pubkey !== getPublicKey(sk) && awardXP(STATE.activeBotId, e.id, 10)) xpGained = true; });
                 if (xpGained) renderBotRoster();
 
                 let filtered = events.filter(e => !STATE.repliedEvents[nip19.noteEncode(e.id)] && !STATE.repliedEvents[e.id]);
@@ -1425,7 +1675,6 @@
             try {
                 let events = await STATE.pool.querySync(STATE.relays, { kinds: [5050], limit: 20 });
                 events.sort((a,b) => b.created_at - a.created_at);
-                
                 let filtered = events.filter(e => !STATE.repliedEvents[e.id]);
                 
                 const container = $('dvm-container'); container.innerHTML = "";
@@ -1434,54 +1683,30 @@
                 } else {
                     filtered.forEach(e => {
                         const ts = new Date(e.created_at * 1000).toLocaleString('en-US', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
-                        
                         let amountParams = e.tags.find(t => t[0] === 'amount');
                         let bidParams = e.tags.find(t => t[0] === 'bid');
-                        
-                        let paymentStr = 'UNSPECIFIED / FREE';
-                        let isPaid = false;
+                        let paymentStr = 'UNSPECIFIED / FREE'; let isPaid = false;
 
-                        if (amountParams && amountParams.length > 1) {
-                            paymentStr = `AMOUNT: ${amountParams[1]} msats`;
-                            isPaid = true;
-                        } else if (bidParams && bidParams.length > 1) {
-                            let maxBid = bidParams[2] ? ` (Max: ${bidParams[2]})` : '';
-                            paymentStr = `BID: ${bidParams[1]} msats${maxBid}`;
-                            isPaid = true;
-                        } else {
+                        if (amountParams && amountParams.length > 1) { paymentStr = `AMOUNT: ${amountParams[1]} msats`; isPaid = true; } 
+                        else if (bidParams && bidParams.length > 1) { paymentStr = `BID: ${bidParams[1]} msats${bidParams[2] ? ` (Max: ${bidParams[2]})` : ''}`; isPaid = true; } 
+                        else {
                             let pAmount = e.tags.find(t => t[0] === 'param' && t[1] === 'amount');
                             let pBid = e.tags.find(t => t[0] === 'param' && t[1] === 'bid');
-                            if (pAmount && pAmount.length > 2) {
-                                paymentStr = `AMOUNT: ${pAmount[2]} msats`;
-                                isPaid = true;
-                            } else if (pBid && pBid.length > 2) {
-                                paymentStr = `BID: ${pBid[2]} msats`;
-                                isPaid = true;
-                            }
+                            if (pAmount && pAmount.length > 2) { paymentStr = `AMOUNT: ${pAmount[2]} msats`; isPaid = true; } 
+                            else if (pBid && pBid.length > 2) { paymentStr = `BID: ${pBid[2]} msats`; isPaid = true; }
                         }
 
                         let iTags = e.tags.filter(t => t[0] === 'i');
                         let pTags = e.tags.filter(t => t[0] === 'param');
-
                         let inputHtml = iTags.map(t => {
                             let type = t[2] || 'text';
-                            let val = t[1].replace(/</g,'&lt;');
-                            return `<div style="margin-bottom: 6px;"><strong style="color: var(--accent);">[Input | ${type.toUpperCase()}]</strong><br><span style="word-break: break-all;">${val}</span></div>`;
+                            return `<div style="margin-bottom: 6px;"><strong style="color: var(--accent);">[Input | ${type.toUpperCase()}]</strong><br><span style="word-break: break-all;">${t[1].replace(/</g,'&lt;')}</span></div>`;
                         }).join('');
-
-                        let paramHtml = pTags.map(t => {
-                            let key = t[1];
-                            let val = t[2] ? t[2].replace(/</g,'&lt;') : '';
-                            return `<div style="margin-bottom: 4px;"><strong style="color: var(--dim);">[Param | ${key}]</strong> ${val}</div>`;
-                        }).join('');
-
+                        let paramHtml = pTags.map(t => `<div style="margin-bottom: 4px;"><strong style="color: var(--dim);">[Param | ${t[1]}]</strong> ${t[2] ? t[2].replace(/</g,'&lt;') : ''}</div>`).join('');
                         let contentHtml = '';
-                        if (e.content && e.content.trim() !== '') {
-                            contentHtml = `<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);"><strong style="color: var(--dim);">[Payload Content]</strong><br><span style="word-break: break-word;">${e.content.replace(/</g,'&lt;')}</span></div>`;
-                        }
+                        if (e.content && e.content.trim() !== '') contentHtml = `<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);"><strong style="color: var(--dim);">[Payload Content]</strong><br><span style="word-break: break-word;">${e.content.replace(/</g,'&lt;')}</span></div>`;
 
-                        const el = document.createElement('div'); 
-                        el.className = 'note-card dvm-card';
+                        const el = document.createElement('div'); el.className = 'note-card dvm-card';
                         el.innerHTML = `
                             <div class="note-header">
                                 <div style="display: flex; align-items: center; gap: 10px;">
@@ -1491,27 +1716,18 @@
                                 <span class="dim-text">${ts}</span>
                             </div>
                             <div class="note-body" style="font-family: var(--font-mono); font-size: 12px; background: var(--bg); padding: 12px; border-radius: 4px; max-height: 250px; overflow-y: auto;">
-                                ${inputHtml}
-                                ${paramHtml}
-                                ${contentHtml}
+                                ${inputHtml} ${paramHtml} ${contentHtml}
                                 ${(!inputHtml && !contentHtml && !paramHtml) ? '<span class="dim-text italic">No standardized job payload data found.</span>' : ''}
                             </div>
-                            
-                            <!-- Dynamic Execution/Payment Status Area -->
                             <div class="dvm-status-area"></div>
-
                             <div class="flex-between mt-10">
-                                <div>
-                                    <button class="btn btn-dvm dvm-exec-btn" style="padding:6px 12px; font-size:11px; font-weight: 700;">REQUEST PAYMENT & EXECUTE</button>
-                                </div>
+                                <div><button class="btn btn-dvm dvm-exec-btn" style="padding:6px 12px; font-size:11px; font-weight: 700;">REQUEST PAYMENT & EXECUTE</button></div>
                                 <span class="dim-text" style="font-size:11px;">Hex: ${e.id.substring(0,16)}...</span>
                             </div>
                         `;
                         
                         el.querySelector('.dvm-exec-btn').onclick = (evt) => {
-                            const btn = evt.target;
-                            btn.disabled = true;
-                            btn.textContent = "EXECUTING MODULE...";
+                            const btn = evt.target; btn.disabled = true; btn.textContent = "EXECUTING MODULE...";
                             executeDVMJobManual(e, el.querySelector('.dvm-status-area'));
                         };
                         container.appendChild(el);
@@ -1523,10 +1739,7 @@
         }
 
         async function executeDVMJobManual(jobEvent, statusArea) {
-            if (!STATE.activeBotId) {
-                alert("Focus Target not selected. Select a bot to execute the job.");
-                return;
-            }
+            if (!STATE.activeBotId) return alert("Focus Target not selected. Select a bot to execute the job.");
             if(confirm(`Intercept NIP-90 Job Request (Hex: ${jobEvent.id.substring(0,8)}) and generate invoice?`)) {
                 await processDVMEvent(jobEvent, STATE.activeBotId, statusArea);
             }
@@ -1536,7 +1749,6 @@
             const bot = STATE.bots[botId];
             logEvent("DVM", botId, `Intercepting Kind 5050 Job: ${jobEvent.id.substring(0,12)}...`);
             
-            // Ensure status area is active and reset
             if (statusArea) {
                 statusArea.classList.add("active");
                 statusArea.innerHTML = `<span class="dim-text">Validating Input Data Payload...</span>`;
@@ -1545,423 +1757,67 @@
             try {
                 // 1. EXTRACT NIP-90 INPUT DATA
                 const iTags = jobEvent.tags.filter(t => t[0] === 'i');
-                if (iTags.length === 0) {
-                    throw new Error("NULL_INPUT_ERROR: Malformed Kind 5050 Event. No 'i' (input) tags found.");
-                }
+                if (iTags.length === 0) throw new Error("NULL_INPUT_ERROR: Malformed Kind 5050 Event. No 'i' (input) tags found.");
 
                 let jobInputText = "";
                 for (const tag of iTags) {
-                    const data = tag[1];
-                    const type = tag[2] || 'text';
-
-                    if (type === 'text') {
-                        jobInputText += data + "\n";
-                    } else if (type === 'event') {
+                    const data = tag[1]; const type = tag[2] || 'text';
+                    if (type === 'text') jobInputText += data + "\n";
+                    else if (type === 'event') {
                         logEvent("DVM", botId, `Resolving parent event reference: ${data.substring(0,12)}...`);
                         try {
                             const resolvedEvent = await STATE.pool.get(STATE.relays, { ids: [data] });
-                            if (!resolvedEvent || !resolvedEvent.content) {
-                                throw new Error(`Relay connections failed to fetch event text content for ${data}`);
-                            }
+                            if (!resolvedEvent || !resolvedEvent.content) throw new Error(`Relay connections failed to fetch event text content for ${data}`);
                             jobInputText += resolvedEvent.content + "\n";
-                        } catch (err) {
-                            throw new Error(`NULL_INPUT_ERROR: Unresolvable Event Reference. ${err.message}`);
-                        }
+                        } catch (err) { throw new Error(`NULL_INPUT_ERROR: Unresolvable Event Reference. ${err.message}`); }
                     }
                 }
-
                 const finalInput = jobInputText.trim() || jobEvent.content.trim();
-                
-                if (!finalInput) {
-                   throw new Error("NULL_INPUT_ERROR: Final resolved input content is empty.");
-                }
+                if (!finalInput) throw new Error("NULL_INPUT_ERROR: Final resolved input content is empty.");
 
-                // 2. EXTRACT PAYMENT DATA & INVOICE VIA PAYMENT ENGINE
+                // 2. PAYMENT / INVOICE GENERATION
                 if (statusArea) statusArea.innerHTML = `<span class="dim-text">Calculating Job Quote & Interfacing with Payment Engine...</span>`;
-
                 let amountMsats = 50000; // default 50 sats if no bid is present
-                const amountTag = jobEvent.tags.find(t => t[0] === 'amount' || (t[0] === 'param' && t[1] === 'amount'));
                 const bidTag = jobEvent.tags.find(t => t[0] === 'bid' || (t[0] === 'param' && t[1] === 'bid'));
-                
                 if (bidTag && bidTag[0] === 'bid' && bidTag[1]) amountMsats = parseInt(bidTag[1]);
-                else if (bidTag && bidTag[1] === 'bid' && bidTag[2]) amountMsats = parseInt(bidTag[2]);
-                else if (amountTag && amountTag[0] === 'amount' && amountTag[1]) amountMsats = parseInt(amountTag[1]);
-                else if (amountTag && amountTag[1] === 'amount' && amountTag[2]) amountMsats = parseInt(amountTag[2]);
 
-                const amountSats = Math.max(1, Math.floor(amountMsats / 1000));
+                let invoiceStr = null;
+                if (STATE.wallet.connected && STATE.wallet.supportedMethods.includes('make_invoice')) {
+                    if (statusArea) statusArea.innerHTML = `<span class="dim-text">Requesting Lightning Invoice for ${amountMsats / 1000} sats...</span>`;
+                    logEvent("DVM", botId, `Generating ${amountMsats / 1000} sat NWC Invoice...`);
+                    const invRes = await executeWalletRequest("make_invoice", (c) => c.makeInvoice({ amount: amountMsats, description: `DVM 5050 Job Execution: ${jobEvent.id.substring(0,8)}` }));
+                    invoiceStr = invRes.invoice;
+                }
+
+                // 3. BROADCAST FEEDBACK (7000)
+                if (statusArea) statusArea.innerHTML = `<span class="dim-text">Broadcasting Kind 7000 Feedback Acknowledgment...</span>`;
+                let feedbackTags = [["e", jobEvent.id], ["p", jobEvent.pubkey], ["status", "payment-required"]];
+                if (invoiceStr) feedbackTags.push(["amount", amountMsats.toString(), invoiceStr]);
+                await publishNote(botId, "Acknowledged job. Payment required.", null, null, null, 7000, feedbackTags);
+                logEvent("OK", botId, `Kind 7000 Feedback published for Job ${jobEvent.id.substring(0,8)}.`);
+
+                // 4. SYNTHESIZE VIA LLM
+                if (statusArea) statusArea.innerHTML = `<span class="dim-text">Executing AI Synthesis Task via Configured LLM...</span>`;
+                const systemPrompt = buildSystemPrompt(bot);
+                const userPrompt = `EXECUTE DVM SYNTHESIS JOB.\nInput Data Payload:\n"""\n${finalInput}\n"""\nProcess this data strictly according to your persona constraints. Output only the final resulting text.`;
+                const aiResult = await generateAIContent(systemPrompt, userPrompt);
                 
-                let coinosToken = localStorage.getItem('swarm_coinos_token');
-                if (!coinosToken) {
-                    // TDZ FIX: Use window.prompt explicitly to avoid scope collision with downstream llmPrompt
-                    coinosToken = window.prompt("Enter Coinos API Token to generate DVM invoices via the payment engine backend:");
-                    if (coinosToken) {
-                        localStorage.setItem('swarm_coinos_token', coinosToken);
-                    } else {
-                        throw new Error("COINOS_TOKEN_MISSING: Cannot generate invoice without API token.");
-                    }
-                }
-
-                logEvent("DVM", botId, `Requesting invoice for ${amountSats} sats from paymentengine.py...`);
-                let invoiceRes;
-                try {
-                    const response = await fetch("http://127.0.0.1:5000/api/invoice", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ amount: amountSats, memo: `DVM Job ${jobEvent.id.substring(0,8)}`, token: coinosToken })
-                    });
-                    invoiceRes = await response.json();
-                    if (!response.ok || !invoiceRes.success) throw new Error(invoiceRes.detail || "Failed to generate invoice");
-                } catch (e) {
-                    throw new Error(`PAYMENT_ENGINE_ERROR: ${e.message}`);
-                }
+                // 5. DEPLOY RESULT (6050)
+                if (statusArea) statusArea.innerHTML = `<span class="dim-text">Deploying Final Kind 6050 Result Structure...</span>`;
+                const resultTags = [["request", JSON.stringify(jobEvent)], ["e", jobEvent.id], ["p", jobEvent.pubkey]];
+                const resultNoteId = await publishNote(botId, aiResult, null, null, jobEvent.content, 6050, resultTags);
                 
-                const bolt11 = invoiceRes.bolt11;
-                const paymentHash = invoiceRes.payment_hash;
+                awardXP(botId, jobEvent.id, 25);
+                logEvent("OK", botId, `DVM Job ${jobEvent.id.substring(0,8)} Executed. Result Tx: ${resultNoteId}`);
+                if (statusArea) statusArea.innerHTML = `<span class="accent-text" style="font-weight:700;">JOB COMPLETED SUCCESSFULLY. ID: ${resultNoteId}</span>`;
 
-                // 3. BROADCAST KIND 7000 (Payment Feedback)
-                if (statusArea) statusArea.innerHTML = `<span class="dim-text">Broadcasting Kind 7000 Feedback Request to topology...</span>`;
-                logEvent("DVM", botId, `Broadcasting Kind 7000 Feedback (Payment Required)...`);
-                
-                const feedbackTags = [
-                    ["status", "payment-required"],
-                    ["amount", amountMsats.toString(), bolt11]
-                ];
-                
-                const feedbackId = await publishNote(botId, "Payment required for DVM Job.", jobEvent.id, jobEvent.pubkey, null, 7000, feedbackTags);
-                logEvent("OK", botId, `Published Kind 7000 Feedback: ${feedbackId}. Awaiting payment...`);
-
-                // 4. POLL PAYMENT ENGINE FOR SETTLEMENT SIGNAL
-                if (statusArea) {
-                    statusArea.innerHTML = `
-                        <div style="padding: 12px; background: var(--bg); border-left: 3px solid var(--dvm-accent); border-radius: 4px;">
-                            <span class="dvm-text" style="font-weight: 700; display: block; margin-bottom: 8px;">AWAITING SETTLEMENT OF ${amountSats} SATS...</span>
-                            <textarea class="main-textarea code-font" rows="3" readonly style="font-size: 11px;">${bolt11}</textarea>
-                        </div>
-                    `;
-                }
-
-                logEvent("DVM", botId, `Polling paymentengine.py for settlement of ${paymentHash}...`);
-                let isPaid = false;
-                try {
-                    const pollRes = await fetch("http://127.0.0.1:5000/api/invoice/wait", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ payment_hash: paymentHash, token: coinosToken, timeout: 300 })
-                    });
-                    const pollData = await pollRes.json();
-                    isPaid = pollData.paid;
-                } catch (e) {
-                    throw new Error(`PAYMENT_POLL_ERROR: ${e.message}`);
-                }
-
-                if (!isPaid) {
-                    throw new Error("PAYMENT_TIMEOUT: Invoice was not paid within standard operational limit.");
-                }
-
-                logEvent("OK", botId, `Payment settled! Synthesizing prompt payload...`);
-                if (statusArea) statusArea.innerHTML = `<span class="accent-text" style="font-weight: 700;">PAYMENT SETTLED! Executing LLM Synthesis Node...</span>`;
-
-                // 5. EXECUTE SYNTHESIS & BROADCAST KIND 6050
-                // TDZ FIX: Renamed 'prompt' to 'llmPrompt'
-                const llmPrompt = `You are a Data Vending Machine executing a text synthesis job. Return ONLY the requested output based on this input. Do not add conversational padding.\n\nInput Prompt: "${finalInput}"`;
-                
-                const output = await callGeminiRaw(bot, llmPrompt, true); 
-                if (output) {
-                    const noteId = await publishNote(botId, output, jobEvent.id, jobEvent.pubkey, finalInput, 6050);
-                    logEvent("OK", botId, `DVM Job Processed & Published (Kind 6050): ${noteId}`);
-                    awardXP(botId, jobEvent.id, 25);
-                    renderBotRoster();
-                    if (statusArea) statusArea.innerHTML = `<span style="color: var(--accent); font-weight: 700;">JOB COMPLETE! Kind 6050 Payload Deployed.</span>`;
-                } else {
-                    throw new Error("LLM_SYNTHESIS_ERROR: Generation returned null output.");
-                }
-
-            } catch(e) {
-                logEvent("ERROR", botId, `DVM Validation/Execution Failed: ${e.message}`);
-                if (statusArea) statusArea.innerHTML = `<span class="error-text" style="font-weight: 700;">EXECUTION ABORTED: ${e.message}</span>`;
-                
-                if (e.message.includes("NULL_INPUT_ERROR") || e.message.includes("PAYMENT_TIMEOUT")) {
-                    logEvent("DVM", botId, `Broadcasting Kind 7000 Feedback (Error Status)...`);
-                    try {
-                        const feedbackTags = [
-                            ["status", "error", e.message]
-                        ];
-                        const noteId = await publishNote(botId, `Job failed: ${e.message}`, jobEvent.id, jobEvent.pubkey, null, 7000, feedbackTags);
-                        logEvent("OK", botId, `Published Kind 7000 Feedback Event: ${noteId}`);
-                    } catch (fbErr) {
-                        logEvent("ERROR", botId, `Failed to broadcast Kind 7000 feedback: ${fbErr.message}`);
-                    }
-                }
+            } catch (err) {
+                logEvent("ERROR", botId, `DVM Execution Failed: ${err.message}`);
+                if (statusArea) statusArea.innerHTML = `<span class="error-text" style="font-weight:700;">EXECUTION HALTED: ${err.message}</span>`;
             }
         }
 
-        function renderNotesList(containerId, events) {
-            const container = $(containerId); container.innerHTML = "";
-            if (events.length === 0) return container.innerHTML = `<div class="dim-text mt-10" style="padding: 16px; text-align: center; border: 1px dashed var(--border); border-radius: 6px;">No viable signal nodes detected.</div>`;
-            events.forEach(e => {
-                const noteId = nip19.noteEncode(e.id); const npub = nip19.npubEncode(e.pubkey);
-                const ts = new Date(e.created_at * 1000).toLocaleString('en-US', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
-                const el = document.createElement('div'); el.className = 'note-card';
-                el.innerHTML = `
-                    <div class="note-header"><span class="note-author">${npub.substring(0, 16)}...</span><span class="dim-text">${ts}</span></div>
-                    <div class="note-body">${e.content.substring(0,300).replace(/</g,'&lt;')}${e.content.length>300?'...':''}</div>
-                    <div class="flex-between">
-                        <button class="btn btn-outline prefill-btn" style="padding:6px 12px; font-size:11px;">TARGET NODE</button>
-                        <span class="dim-text" style="font-size:11px; font-family: var(--font-mono);">${noteId.substring(0,25)}...</span>
-                    </div>
-                `;
-                el.querySelector('.prefill-btn').onclick = () => prefillReply(noteId, npub, e.content);
-                container.appendChild(el);
-            });
-        }
-
-        function prefillReply(noteId, author, content) {
-            $('reply-id-ent').value = noteId;
-            const ctxLbl = $('reply-ctx-lbl');
-            ctxLbl.style.display = "block";
-            ctxLbl.textContent = `↳ ${author.substring(0,16)}... : ${content.substring(0,100).replace(/\n/g,' ')}...`;
-            document.querySelector('.tab-link[data-tab="tab-reply"]').click();
-            $('reply-txt').focus();
-        }
-
-        // LLM Interfacing
-        async function callGeminiRaw(botObj, userPrompt, isDVM = false) {
-            if (!STATE.apiKey) throw new Error("API Key required for LLM Integration.");
-            
-            let systemPrompt = STATE.autoPilot.basePrompt + `\n\nYou are operating on the Nostr network under the following identity schema:\nAttributes: ${botObj.persona || "Standard AI"}\nCharacter Definition: ${botObj.characters || "None"}\n\nOperate strictly within parameters. Output natural language. Absolutely no hashtags.`;
-            
-            if (isDVM) {
-                systemPrompt = "You are a specialized text processor running as a decentralized function node. Follow instructions precisely without character affectation.";
-            } else if (STATE.autoPilot.directive.trim()) {
-                systemPrompt += `\n\nCRITICAL OVERRIDE DIRECTIVE:\n${STATE.autoPilot.directive.trim()}`;
-            }
-
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${STATE.apiKey}`;
-            const payload = {
-                system_instruction: { parts: [{text: systemPrompt}] },
-                contents: [{ role: "user", parts: [{text: userPrompt}] }],
-                generationConfig: { temperature: isDVM ? 0.2 : 0.7 }
-            };
-
-            try {
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error?.message || "LLM API Failure");
-                
-                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (!text) throw new Error("Null response from model.");
-                return text.trim();
-            } catch(e) {
-                logEvent("ERROR", botObj.id || "SYSTEM", `LLM Synthesis Failed: ${e.message}`);
-                return null;
-            }
-        }
-
-        // --- UI BINDINGS ---
-        function setupEventListeners() {
-            $('btn-save-api').onclick = () => { STATE.apiKey =$('api-key-ent').value.trim(); localStorage.setItem('swarm_api_key', STATE.apiKey); logEvent("OK", "SYSTEM", "API Key secured."); };
-            
-            // Compose
-            $('compose-txt').oninput = e =>$('char-count-lbl').textContent = `${e.target.value.length} bytes`;
-            $('btn-clear-compose').onclick = () => { $('compose-txt').value = ""; $('char-count-lbl').textContent = "0 bytes"; };
-            $('btn-post').onclick = broadcastNote;
-            
-            $('btn-ai-compose').onclick = async () => {
-                if (!STATE.activeBotId) return alert("Select Focus Target first.");
-                setBusy(true, "SYNTHESIZING");
-                const out = await callGeminiRaw(STATE.bots[STATE.activeBotId], "Generate a novel, engaging network payload based on your persona. Provide ONLY the final text string.");
-                if (out) { $('compose-txt').value = out; $('char-count-lbl').textContent = `${out.length} bytes`; }
-                setBusy(false);
-            };
-
-            // Reply
-            $('btn-clear-reply').onclick = () => { $('reply-txt').value = ""; $('reply-id-ent').value = ""; $('reply-ctx-lbl').style.display = 'none'; };$('btn-reply').onclick = sendReply;
-            $('btn-ai-reply').onclick = async () => {
-                if (!STATE.activeBotId) return alert("Select Focus Target first.");
-                let rId = $('reply-id-ent').value.trim();
-                if (!rId) return alert("Specify Target Event ID.");
-                setBusy(true, "SYNTHESIZING");
-                const out = await callGeminiRaw(STATE.bots[STATE.activeBotId], `Formulate a response to a network event targeting your persona. Only provide the text string.`);
-                if (out) $('reply-txt').value = out;
-                setBusy(false);
-            };
-
-            // Network Feeds
-            $('btn-fetch-feed').onclick = fetchGlobalFeed;
-            $('btn-check-mentions').onclick = checkMentions;
-
-            // DVM
-            $('btn-scan-dvm').onclick = fetchDVMJobs;
-
-            // Autopilot
-            $('btn-auto-start').onclick = () => {
-                if(STATE.autoPilot.timerId) return;
-                STATE.autoPilot.enabled = true;
-                const interval = parseInt($('auto-interval-sel').value) || 300000;
-                STATE.autoPilot.intervalMs = interval;
-                
-                logEvent("INFO", "SYSTEM", `Autopilot ACTIVATE: Interval ${interval/1000}s`);
-                $('auto-status-badge').textContent = "ACTIVE";
-                $('auto-status-badge').className = "status-badge badge-on";
-                
-                const loopFn = async () => {
-                    logEvent("INFO", "SYSTEM", `Autopilot TICK executed.`);
-                    if (STATE.autoPilot.dvmEnabled) {
-                         try {
-                             let events = await STATE.pool.querySync(STATE.relays, { kinds: [5050], limit: 5 });
-                             let openDVM = events.find(e => !STATE.repliedEvents[e.id]);
-                             if (openDVM && Object.keys(STATE.bots).length > 0) {
-                                 let firstBot = Object.keys(STATE.bots)[0];
-                                 await processDVMEvent(openDVM, firstBot, null);
-                             }
-                         } catch(e) {}
-                    }
-                    STATE.autoPilot.timerId = setTimeout(loopFn, STATE.autoPilot.intervalMs);
-                };
-                STATE.autoPilot.timerId = setTimeout(loopFn, interval);
-            };
-
-            $('btn-auto-stop').onclick = () => {
-                if(STATE.autoPilot.timerId) {
-                    clearTimeout(STATE.autoPilot.timerId);
-                    STATE.autoPilot.timerId = null;
-                }
-                STATE.autoPilot.enabled = false;
-                $('auto-status-badge').textContent = "SUSPENDED";
-                $('auto-status-badge').className = "status-badge badge-off";
-                logEvent("INFO", "SYSTEM", "Autopilot SUSPENDED.");
-            };
-            
-            $('btn-save-prompts').onclick = () => {
-                STATE.autoPilot.basePrompt = $('prompt-base-txt').value;
-                STATE.autoPilot.directive = $('prompt-directive-txt').value;
-                STATE.autoPilot.intervalMs = parseInt($('auto-interval-sel').value) || 300000;
-                STATE.autoPilot.dvmEnabled = $('chk-dvm-auto').checked;
-                saveAutoSettings();
-                logEvent("OK", "SYSTEM", "Prompt Configuration Committed.");
-            };
-            
-            // Wallet / NWC
-            $('btn-wallet-save').onclick = () => {
-                const url = $('wallet-nwc-url').value.trim();
-                const check = validateNwcUrl(url);
-                if (!check.valid && url !== "") return alert(check.error);
-                STATE.wallet.nwcUrl = url;
-                localStorage.setItem('swarm_wallet_nwc_url', url);
-                resetWalletConnection();
-                logEvent("OK", "SYSTEM", "Wallet Connection String saved.");
-            };
-
-            $('btn-wallet-connect').onclick = async () => {
-                const url = $('wallet-nwc-url').value.trim();
-                if (!url) return alert("Enter an NWC string first.");
-                try {
-                    await ensureWalletConnected(true);
-                    alert("Connection successful!");
-                } catch(e) {
-                    alert(`Connection Failed:\n\n${formatWalletError(e)}`);
-                }
-            };
-
-            $('btn-wallet-disconnect').onclick = () => {$('wallet-nwc-url').value = "";
-                STATE.wallet.nwcUrl = "";
-                localStorage.removeItem('swarm_wallet_nwc_url');
-                resetWalletConnection();
-                $('wallet-balance-val').textContent = "— sats";
-                $('wallet-balance-updated').textContent = "";
-                logEvent("INFO", "SYSTEM", "Wallet Disconnected.");
-            };
-
-            $('btn-wallet-balance').onclick = checkWalletBalance;
-            $('btn-wallet-invoice').onclick = createWalletInvoice;
-            
-            $('btn-wallet-copy-invoice').onclick = () => {
-                const ta = $('wallet-invoice-output');
-                ta.select();
-                document.execCommand('copy');
-                logEvent("OK", "SYSTEM", "Invoice copied to clipboard.");
-            };
-            
-            // Management
-            $('btn-export-bots').onclick = () => {$('manage-bots-txt').value = JSON.stringify(STATE.bots, null, 2);
-                logEvent("OK", "SYSTEM", "Identities exported to textarea.");
-            };
-            $('btn-save-bots').onclick = () => {
-                try {
-                    STATE.bots = JSON.parse($('manage-bots-txt').value);
-                    saveBots();
-                    renderBotRoster();
-                    logEvent("OK", "SYSTEM", "Manifest applied successfully.");
-                } catch(e) { alert("Invalid JSON"); }
-            };
-            $('btn-generate-bot').onclick = () => {
-                const newId = `bot_${Object.keys(STATE.bots).length + 1}`;
-                STATE.bots[newId] = generateNewBotObj();
-                $('manage-bots-txt').value = JSON.stringify(STATE.bots, null, 2);
-                saveBots(); renderBotRoster();
-                logEvent("INFO", "SYSTEM", `New default identity provisioned: ${newId}`);
-            };
-            $('btn-generate-ai-bot').onclick = async () => {
-                setBusy(true, "SYNTHESIZING IDENTITY");
-                logEvent("POST", "SYSTEM", "Requesting identity synthesis...");
-                const prompt = `Output ONLY valid JSON representing a single AI persona object with keys: "persona" (string, e.g. 'cynical, ai, 5, analyst, iq:high — sharp, sarcastic') and "characters" (string, e.g. 'A sarcastic crypto analyst...'). Do not include markdown formatting or backticks.`;
-                const out = await callGeminiRaw({persona:"system"}, prompt);
-                setBusy(false);
-                if (out) {
-                    try {
-                        let clean = out.replace(/```json/g,'').replace(/```/g,'').trim();
-                        const parsed = JSON.parse(clean);
-                        const newId = `bot_${Object.keys(STATE.bots).length + 1}`;
-                        let newBot = generateNewBotObj();
-                        newBot.persona = parsed.persona || newBot.persona;
-                        newBot.characters = parsed.characters || newBot.characters;
-                        STATE.bots[newId] = newBot;
-                        $('manage-bots-txt').value = JSON.stringify(STATE.bots, null, 2);
-                        saveBots(); renderBotRoster();
-                        logEvent("OK", "SYSTEM", `AI Identity synthesized: ${newId}`);
-                    } catch(e) { logEvent("ERROR", "SYSTEM", `Identity Parse Failed: ${e.message}`); }
-                }
-            };
-            $('btn-clear-log').onclick = () =>$('event-log').innerHTML = "";
-            $('btn-clear-history').onclick = () => {
-                if (confirm("Purge local telemetry archive?")) {
-                    STATE.publishedHistory = [];
-                    saveHistory(); renderHistory();
-                    logEvent("INFO", "SYSTEM", "Telemetry archive cleared.");
-                }
-            };
-            
-            // Relays
-            $('btn-add-relay').onclick = () => {
-                const r = $('relay-add-ent').value.trim();
-                if(r && r.startsWith('wss://') && !STATE.relays.includes(r)) { STATE.relays.push(r); renderRelays(); $('relay-add-ent').value = "wss://"; }
-            };
-            $('btn-remove-relay').onclick = () => {
-                const lb = $('relay-listbox');
-                if (lb.selectedIndex >= 0) { STATE.relays.splice(lb.selectedIndex, 1); renderRelays(); }
-            };
-
-            // Tabs & Theme
-            document.querySelectorAll('.tab-link').forEach(btn => {
-                btn.onclick = () => {
-                    document.querySelectorAll('.tab-link').forEach(b => b.classList.remove('active'));
-                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                    btn.classList.add('active');
-                    $(btn.dataset.tab).classList.add('active');
-                };
-            });
-            $('theme-selector').onchange = (e) => {
-                document.body.className = e.target.value;
-                localStorage.setItem('swarm_theme', e.target.value);
-            };
-        }
-
-        window.onload = initApp;
+        document.addEventListener("DOMContentLoaded", initApp);
     </script>
 </body>
 </html>
