@@ -90,7 +90,7 @@
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        .left-panel { width: 320px; flex-shrink: 0; padding: 16px; }
+        .left-panel { width: 340px; flex-shrink: 0; padding: 16px; }
         .center-panel { flex: 1; padding: 16px; }
         .right-panel { width: 380px; flex-shrink: 0; padding: 16px; }
         
@@ -208,7 +208,7 @@
         .flex-between { display: flex; justify-content: space-between; align-items: center; }
         .flex-shrink-0 { flex-shrink: 0; }
         .mt-5 { margin-top: 5px; } .mt-10 { margin-top: 10px; } .mt-15 { margin-top: 15px; } .mt-20 { margin-top: 20px; }
-        .mb-5 { margin-bottom: 5px; } .mb-10 { margin-bottom: 10px; }
+        .mb-5 { margin-bottom: 5px; } .mb-10 { margin-bottom: 10px; } .mb-15 { margin-bottom: 15px; }
         .ml-5 { margin-left: 5px; } .ml-10 { margin-left: 10px; } .ml-auto { margin-left: auto; }
         
         .dim-text { color: var(--dim); font-size: 13px; }
@@ -231,7 +231,7 @@
            COMPONENT SPECIFICS
            --------------------------------- */
         
-        /* Bot Cards */
+        /* Bot Cards & Avatar Roster */
         .bot-card { 
             background-color: var(--input-bg); 
             cursor: pointer; 
@@ -248,10 +248,41 @@
             border-color: var(--accent); 
             box-shadow: inset 2px 0 0 var(--accent); 
         }
-        .bot-header { display: flex; justify-content: space-between; align-items: center; font-size: 14px; margin-bottom: 6px; }
-        .bot-id { color: var(--text); font-weight: 700; text-transform: uppercase; }
+        .bot-card-flex {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .bot-avatar-container {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1.5px solid var(--accent);
+            background-color: var(--panel);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+            font-weight: 700;
+            color: var(--accent);
+            font-size: 16px;
+            text-transform: uppercase;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .bot-avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .bot-card-body {
+            flex: 1;
+            min-width: 0;
+        }
+        .bot-header { display: flex; justify-content: space-between; align-items: center; font-size: 14px; margin-bottom: 4px; }
+        .bot-id { color: var(--text); font-weight: 700; text-transform: uppercase; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
         .bot-stats { font-size: 12px; color: var(--dim); margin-bottom: 6px; }
-        .bot-chars { font-size: 12px; color: var(--text); font-style: italic; margin-bottom: 6px; line-height: 1.4; opacity: 0.9;}
+        .bot-chars { font-size: 12px; color: var(--text); font-style: italic; margin-bottom: 6px; line-height: 1.4; opacity: 0.9; }
         .bot-npub { font-size: 11px; color: var(--dim); word-break: break-all; font-family: var(--font-mono); }
         
         .bot-del-icon {
@@ -278,9 +309,9 @@
             border: 1px solid var(--border); 
         }
         
-        .tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+        .tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
         .tab-link { 
-            flex: 1; background-color: transparent; color: var(--dim); padding: 10px 5px; border: none; 
+            flex: 1; min-width: 80px; background-color: transparent; color: var(--dim); padding: 10px 5px; border: none; 
             cursor: pointer; font-weight: 600; font-family: var(--font-sans); font-size: 12px;
             border-bottom: 2px solid transparent; transition: all 0.2s; text-align: center;
         }
@@ -307,7 +338,169 @@
         .note-header { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 10px; }
         .note-author { color: var(--text); font-weight: 700; }
         .note-body { font-size: 14px; margin-bottom: 14px; line-height: 1.6; word-break: break-word; color: var(--text); }
+
+        /* ---------------------------------
+           DIRECT MESSAGING INBOX LAYOUT (NIP-04)
+           --------------------------------- */
+        .dm-layout {
+            display: flex;
+            gap: 16px;
+            height: 100%;
+            min-height: 520px;
+        }
+        .dm-sidebar {
+            width: 280px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px;
+        }
+        .dm-conversations-list {
+            flex: 1;
+            overflow-y: auto;
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .dm-conv-item {
+            padding: 10px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--panel);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .dm-conv-item:hover {
+            border-color: var(--accent);
+        }
+        .dm-conv-item.active {
+            border-color: var(--accent);
+            background: var(--input-bg);
+            box-shadow: inset 3px 0 0 var(--accent);
+        }
+        .dm-conv-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid var(--accent);
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 13px;
+            color: var(--accent);
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .dm-conv-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .dm-conv-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .dm-conv-name {
+            font-weight: 700;
+            font-size: 13px;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .dm-conv-preview {
+            font-size: 11px;
+            color: var(--dim);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 2px;
+        }
+        .dm-conv-time {
+            font-size: 10px;
+            color: var(--dim);
+            font-family: var(--font-mono);
+            flex-shrink: 0;
+        }
+        .dm-main-view {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 16px;
+        }
+        .dm-header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 12px;
+        }
         
+        /* Direct Message Chat Bubbles */
+        .dm-chat-box {
+            background-color: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .dm-bubble {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 8px;
+            line-height: 1.5;
+            word-break: break-word;
+            position: relative;
+        }
+        .dm-incoming {
+            align-self: flex-start;
+            background-color: var(--bg);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--dvm-accent);
+        }
+        .dm-outgoing {
+            align-self: flex-end;
+            background-color: var(--input-bg);
+            border: 1px solid var(--accent);
+            border-right: 3px solid var(--accent);
+        }
+        .dm-meta {
+            font-size: 11px;
+            color: var(--dim);
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            font-family: var(--font-mono);
+        }
+
+        /* Persona Form Grid */
+        .persona-form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .persona-form-full {
+            grid-column: span 2;
+        }
+
         .history-parent-quote {
             background-color: var(--bg);
             border-left: 2px solid var(--dim);
@@ -360,6 +553,7 @@
         .tag-ERROR { border-color: var(--error); color: var(--error); }
         .tag-INFO { border-color: var(--dim); color: var(--dim); }
         .tag-DVM { border-color: var(--dvm-accent); color: var(--dvm-accent); }
+        .tag-DM { border-color: var(--accent); color: var(--accent); }
 
         .status-badge { 
             font-size: 11px; 
@@ -389,24 +583,13 @@
             outline: none;
             cursor: pointer;
         }
-
-        /* DVM Status Inject Area */
-        .dvm-status-area {
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px dashed var(--border);
-            display: none;
-        }
-        .dvm-status-area.active {
-            display: block;
-        }
     </style>
 </head>
 <body class="theme-professional">
     <header class="top-bar">
         <div class="header-left">
             <span class="app-title">Nostr Command Interface</span>
-            <span class="dim-text ml-10">v3.2 AUTONOMOUS ENTERPRISE + DVM HUB</span>
+            <span class="dim-text ml-10">v3.3 AUTONOMOUS ENTERPRISE + NIP-04 DM & METADATA HUB</span>
         </div>
         <div class="header-right">
             <select id="theme-selector" class="theme-selector">
@@ -432,8 +615,11 @@
     <div class="layout-container">
         
         <aside class="panel left-panel">
-            <div class="panel-header">IDENTITY ROSTER</div>
-            <input type="text" id="bot-search" class="main-input search-input" placeholder="Query identities...">
+            <div class="flex-between mb-5">
+                <div class="panel-header" style="margin-bottom:0; border:none; padding:0;">IDENTITY ROSTER</div>
+                <button id="btn-sync-meta" class="btn btn-secondary" style="padding: 2px 6px; font-size: 10px;" title="Sync Nostr Profile Metadata & Avatars from Relays">SYNC AVATARS</button>
+            </div>
+            <input type="text" id="bot-search" class="main-input search-input mt-10" placeholder="Query identities...">
             <div id="bot-list" class="scrollable-container"></div>
         </aside>
 
@@ -450,6 +636,7 @@
                 <button class="tab-link" data-tab="tab-reply">REPLY</button>
                 <button class="tab-link" data-tab="tab-feed">NETWORK FEED</button>
                 <button class="tab-link" data-tab="tab-mentions">MENTIONS</button>
+                <button class="tab-link" data-tab="tab-dm">DIRECT MESSAGES</button>
                 <button class="tab-link" data-tab="tab-dvm">DVM HUB</button>
                 <button class="tab-link" data-tab="tab-wallet">WALLET</button>
                 <button class="tab-link" data-tab="tab-autonomy">AUTOPILOT</button>
@@ -511,6 +698,67 @@
                     <div id="mentions-container" class="notes-container flex-1 overflow-y-auto pr-2"></div>
                 </div>
 
+                <!-- DIRECT MESSAGING TAB (NIP-04 ENCRYPTED INBOX) -->
+                <div id="tab-dm" class="tab-content scrollable-container" style="height: 100%;">
+                    <div class="dm-layout">
+                        <!-- INBOX SIDEBAR: CONVERSATIONS & PEER LIST -->
+                        <div class="dm-sidebar">
+                            <div class="flex-between mb-10">
+                                <span class="settings-label" style="margin:0; font-size: 12px;">DM INBOX & THREADS</span>
+                                <button id="btn-fetch-dms" class="btn btn-outline" style="padding: 3px 8px; font-size: 10px;" title="Scan Nostr Relays for Direct Message Events">SCAN INBOX</button>
+                            </div>
+
+                            <div style="margin-bottom: 10px;">
+                                <span class="settings-label" style="font-size: 10px;">DIRECT RECIPIENT (NPUB / HEX)</span>
+                                <input type="text" id="dm-recipient-input" class="main-input" style="font-size: 11px; padding: 6px 8px;" placeholder="npub1... or hex pubkey">
+                            </div>
+
+                            <div style="margin-bottom: 10px;">
+                                <span class="settings-label" style="font-size: 10px;">SWARM QUICK SELECT</span>
+                                <select id="dm-recipient-select" class="main-select" style="font-size: 11px; padding: 6px 8px;">
+                                    <option value="">Select identity...</option>
+                                </select>
+                            </div>
+
+                            <button id="btn-start-dm-thread" class="btn btn-secondary mb-10" style="width: 100%; font-size: 11px; padding: 6px;">OPEN THREAD</button>
+
+                            <span class="settings-label" style="font-size: 10px; border-top: 1px solid var(--border); padding-top: 8px;">ACTIVE CONVERSATIONS</span>
+                            <div id="dm-conversations-list" class="dm-conversations-list">
+                                <div class="dim-text" style="font-size: 11px; text-align: center; padding: 12px;">Click "SCAN INBOX" or enter an npub above to start messaging.</div>
+                            </div>
+                        </div>
+
+                        <!-- MAIN CHAT VIEW -->
+                        <div class="dm-main-view">
+                            <div id="dm-header-bar" class="dm-header-bar">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div id="dm-active-avatar" class="dm-conv-avatar">?</div>
+                                    <div>
+                                        <div id="dm-active-peer-name" style="font-weight: 700; font-size: 14px; color: var(--text);">NO THREAD SELECTED</div>
+                                        <div id="dm-active-peer-npub" class="dim-text code-font" style="font-size: 11px;">Select or enter a recipient npub to display messages</div>
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 6px;">
+                                    <button id="btn-copy-peer-npub" class="btn btn-secondary" style="padding: 4px 8px; font-size: 10px;" title="Copy Recipient Public Key">COPY NPUB</button>
+                                </div>
+                            </div>
+
+                            <div id="dm-chat-container" class="dm-chat-box" style="flex: 1; margin-bottom: 12px; height: auto;">
+                                <div class="dim-text mt-10" style="padding: 16px; text-align: center;">Select a conversation from the sidebar or input a recipient npub above to load NIP-04 encrypted messages.</div>
+                            </div>
+
+                            <div class="dm-compose-area">
+                                <span class="settings-label" style="font-size: 11px;">ENCRYPTED MESSAGE PAYLOAD (NIP-04)</span>
+                                <textarea id="dm-compose-txt" class="main-textarea" rows="3" placeholder="Type confidential payload. Message will be encrypted using ECDH shared secret prior to network transmission..."></textarea>
+                                <div class="action-row flex-between mt-10">
+                                    <button id="btn-ai-dm" class="btn btn-outline">SYNTHESIZE DM (AI)</button>
+                                    <button id="btn-send-dm" class="btn btn-primary">TRANSMIT ENCRYPTED DM</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- DVM HUB TAB -->
                 <div id="tab-dvm" class="tab-content scrollable-container">
                     <div style="background: var(--bg); border: 1px solid var(--border); padding: 20px; border-radius: 6px; margin-bottom: 24px;">
@@ -521,10 +769,21 @@
                             <button id="btn-scan-dvm" class="btn btn-dvm">SCAN OPEN JOB QUEUE</button>
                         </div>
                         <p class="dim-text" style="line-height: 1.5;">
-                            Monitor the topology for Open Text/Synthesis Jobs (Kind 5050). The swarm can intercept these requests, request a Lightning invoice via paymentengine.py, broadcast a Feedback Event (Kind 7000), await settlement, and finally deploy a Result Event (Kind 6050) referencing the original job.
+                            Monitor the topology for Open Text/Synthesis Jobs (Kind 5050). The swarm can intercept these requests, request a Lightning invoice via the integrated wallet, broadcast a Feedback Event (Kind 7000), await settlement, and finally deploy a Result Event (Kind 6050) referencing the original job.
                         </p>
                     </div>
-                    <div id="dvm-container" class="notes-container flex-1 overflow-y-auto pr-2"></div>
+                    
+                    <span class="settings-label">OPEN DVM JOBS (KIND 5050)</span>
+                    <div id="dvm-container" class="notes-container pr-2" style="max-height: 400px; overflow-y: auto; margin-bottom: 24px;">
+                        <div class="dim-text mt-10">No jobs currently loaded. Click Scan.</div>
+                    </div>
+                    
+                    <div style="border-top: 1px dashed var(--border); padding-top: 16px;">
+                        <span class="settings-label">ACTIVE BIDS & PENDING INVOICES</span>
+                        <div id="active-invoices-container" class="notes-container pr-2" style="max-height: 400px; overflow-y: auto;">
+                            <div class="dim-text mt-10">No active bids or pending invoices.</div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- WALLET TAB -->
@@ -638,17 +897,85 @@
                     <div id="history-container" class="notes-container flex-1 overflow-y-auto pr-2"></div>
                 </div>
 
+                <!-- SETTINGS & STRUCTURED PERSONA BUILDER TAB -->
                 <div id="tab-manage" class="tab-content scrollable-container">
-                    <p class="dim-text mb-10">Manage cryptographic identities. Paste raw JSON array to import, or generate automatically.</p>
-                    <textarea id="manage-bots-txt" class="main-textarea code-font" rows="12"></textarea>
-                    <div class="action-row mt-15 flex-between">
-                        <button id="btn-export-bots" class="btn btn-secondary">EXPORT SECURE JSON</button>
-                        <div>
-                            <button id="btn-generate-bot" class="btn btn-outline">PROVISION NEW IDENTITY</button>
-                            <button id="btn-generate-ai-bot" class="btn btn-outline ml-5">SYNTHESIZE AI IDENTITY</button>
+                    
+                    <div style="background: var(--bg); border: 1px solid var(--border); padding: 16px; border-radius: 6px; margin-bottom: 20px;">
+                        <div class="flex-between mb-15">
+                            <span class="settings-label" style="font-size: 14px; margin: 0;">STRUCTURED PERSONA BUILDER</span>
+                            <select id="persona-select" class="main-select" style="width: 250px;">
+                                <option value="">-- Create New Identity --</option>
+                            </select>
                         </div>
-                        <button id="btn-save-bots" class="btn btn-primary">APPLY MANIFEST</button>
+
+                        <div class="persona-form-grid">
+                            <div>
+                                <span class="settings-label">IDENTITY HANDLE / ID</span>
+                                <input type="text" id="persona-id-input" class="main-input" placeholder="e.g. bot_1 or bot_analyst">
+                            </div>
+                            <div>
+                                <span class="settings-label">NSEC SECRET KEY</span>
+                                <div style="display: flex; gap: 6px;">
+                                    <input type="password" id="persona-nsec-input" class="main-input" placeholder="nsec1...">
+                                    <button id="btn-persona-gen-nsec" class="btn btn-secondary flex-shrink-0" title="Generate New Keypair">GEN KEY</button>
+                                </div>
+                            </div>
+                            <div>
+                                <span class="settings-label">PRIMARY TRAIT / ROLE</span>
+                                <input type="text" id="persona-trait-input" class="main-input" placeholder="e.g. cynical, academic, sarcastic">
+                            </div>
+                            <div>
+                                <span class="settings-label">GENDER / IDENTITY</span>
+                                <input type="text" id="persona-gender-input" class="main-input" placeholder="e.g. ai, non-binary, female, male">
+                            </div>
+                            <div>
+                                <span class="settings-label">AGE / EPOCH</span>
+                                <input type="text" id="persona-age-input" class="main-input" placeholder="e.g. 0, 42, 256">
+                            </div>
+                            <div>
+                                <span class="settings-label">CLASSIFICATION / TYPE</span>
+                                <input type="text" id="persona-type-input" class="main-input" placeholder="e.g. synthetic observer, analyst">
+                            </div>
+                            <div>
+                                <span class="settings-label">IQ / INTELLECT LEVEL</span>
+                                <input type="text" id="persona-iq-input" class="main-input" placeholder="e.g. high, 160">
+                            </div>
+                            <div>
+                                <span class="settings-label">AVATAR IMAGE URL</span>
+                                <input type="text" id="persona-avatar-input" class="main-input" placeholder="https://example.com/avatar.png">
+                            </div>
+                            <div class="persona-form-full">
+                                <span class="settings-label">CHARACTER BACKSTORY & LORE</span>
+                                <textarea id="persona-chars-input" class="main-textarea" rows="3" placeholder="Detailed behavioral lore and background context..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="action-row flex-between">
+                            <div>
+                                <button id="btn-save-persona-form" class="btn btn-primary">SAVE PERSONA</button>
+                                <button id="btn-new-persona-form" class="btn btn-secondary ml-5">NEW BLANK FORM</button>
+                                <button id="btn-ai-persona-form" class="btn btn-outline ml-5">SYNTHESIZE WITH AI</button>
+                            </div>
+                            <div>
+                                <button id="btn-broadcast-meta" class="btn btn-dvm" title="Broadcast Kind 0 metadata event with avatar to Nostr relays">BROADCAST NOSTR METADATA (KIND 0)</button>
+                                <button id="btn-delete-persona-form" class="btn btn-danger ml-5">DELETE PERSONA</button>
+                            </div>
+                        </div>
                     </div>
+
+                    <div style="border-top: 1px dashed var(--border); padding-top: 16px;">
+                        <span class="settings-label">RAW JSON MANIFEST ARCHIVE</span>
+                        <p class="dim-text mb-10">Export or paste full raw identity array JSON for batch management.</p>
+                        <textarea id="manage-bots-txt" class="main-textarea code-font" rows="8"></textarea>
+                        <div class="action-row mt-15 flex-between">
+                            <button id="btn-export-bots" class="btn btn-secondary">EXPORT SECURE JSON</button>
+                            <div>
+                                <button id="btn-generate-bot" class="btn btn-outline">PROVISION NEW IDENTITY</button>
+                            </div>
+                            <button id="btn-save-bots" class="btn btn-primary">APPLY RAW MANIFEST</button>
+                        </div>
+                    </div>
+
                 </div>
 
             </div>
@@ -687,7 +1014,7 @@
     </div>
 
     <script type="module">
-        import { SimplePool, finalizeEvent, nip19, getPublicKey, generateSecretKey } from 'https://cdn.jsdelivr.net/npm/nostr-tools@2.7.0/+esm';
+        import { SimplePool, finalizeEvent, nip19, getPublicKey, generateSecretKey, nip04 } from 'https://cdn.jsdelivr.net/npm/nostr-tools@2.7.0/+esm';
 
         // Set initial load status
         document.getElementById('status-lbl').textContent = "SYSTEMS ONLINE";
@@ -700,6 +1027,8 @@
             repliedEvents: {}, 
             xpTrackedEvents: {}, 
             publishedHistory: [], 
+            dmThreads: {},       // peerPubkeyHex -> Array of decrypted DM objects
+            activeDmPeer: null,  // Active peer pubkey hex in DM thread view
             apiKey: "",
             llmProvider: "gemini",
             proxyUrl: "",
@@ -733,7 +1062,6 @@
 
         function awardXP(botId, eventId, amount = 10) {
             if (STATE.xpTrackedEvents[eventId]) return false;
-
             if (STATE.bots[botId].xp === undefined) STATE.bots[botId].xp = 0;
             
             const oldLevel = getBotLevel(STATE.bots[botId].xp);
@@ -741,7 +1069,6 @@
             const newLevel = getBotLevel(STATE.bots[botId].xp);
 
             STATE.xpTrackedEvents[eventId] = true;
-            
             const keys = Object.keys(STATE.xpTrackedEvents);
             if (keys.length > 5000) delete STATE.xpTrackedEvents[keys[0]];
             
@@ -799,7 +1126,7 @@
                         'x-api-key': STATE.apiKey,
                         'anthropic-version': '2023-06-01',
                         'content-type': 'application/json',
-                        'anthropic-dangerous-direct-browser-access': 'true' // Helpful if bypassing strict client-side checks
+                        'anthropic-dangerous-direct-browser-access': 'true'
                     },
                     body: JSON.stringify(payload)
                 });
@@ -811,7 +1138,6 @@
                 const data = await res.json();
                 return data.content[0].text;
             } else {
-                // Gemini Default
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${STATE.apiKey}`;
                 const payload = {
                     system_instruction: { parts: [{ text: systemPrompt }] },
@@ -1048,13 +1374,24 @@
             }
         }
 
-        function stripUrls(text) { return text.replace(/https?:\/\/[^\s]+/g, '').replace(/\s{2,}/g, ' ').trim(); }
-
+        function stripUrls(text) { return text.trim(); }
+        
         function getSecKeyBytes(nsec) {
             try {
                 const decoded = nip19.decode(nsec);
                 if (decoded.type === 'nsec') return decoded.data;
             } catch (e) { return null; }
+            return null;
+        }
+
+        function getHexFromNpubOrHex(str) {
+            if (!str) return null;
+            str = str.trim();
+            if (/^[0-9a-fA-F]{64}$/.test(str)) return str.toLowerCase();
+            try {
+                const decoded = nip19.decode(str);
+                if (decoded.type === 'npub') return decoded.data;
+            } catch(e) {}
             return null;
         }
 
@@ -1065,6 +1402,7 @@
                 npub: nip19.npubEncode(getPublicKey(sk)),
                 persona: "neutral, ai, 0, synthetic observer, iq:high — logical, succinct",
                 characters: "A newly initialized node.",
+                avatar: "",
                 xp: 0
             };
         }
@@ -1075,7 +1413,10 @@
                 if(STATE.activeBotId === bid) {
                     STATE.activeBotId = null; $('active-bot-display').textContent = "AWAITING SELECTION";
                 }
-                saveBots(); renderBotRoster();
+                saveBots(); 
+                renderBotRoster();
+                updatePersonaSelectDropdown();
+                updateDmDropdownOptions();
                 $('manage-bots-txt').value = JSON.stringify(STATE.bots, null, 2);
                 logEvent("INFO", "SYSTEM", `Identity ${bid} successfully purged.`);
             }
@@ -1087,18 +1428,912 @@
                     document.querySelectorAll('.tab-link').forEach(b => b.classList.remove('active'));
                     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                     e.target.classList.add('active');
-                    $(e.target.dataset.tab).classList.add('active');
+                    const targetTab = e.target.dataset.tab;
+                    $(targetTab).classList.add('active');
+
+                    if (targetTab === 'tab-dm' && STATE.activeBotId) {
+                        fetchDirectMessages();
+                    }
                 }
             });
         }
 
+        // --- DVM LOGIC (NIP-90) ---
+        async function fetchDVMJobs() {
+            setBusy(true, "SCANNING DVM QUEUE");
+            try {
+                const jobs = await STATE.pool.querySync(STATE.relays, { kinds: [5050], limit: 20 });
+                const container = $('dvm-container');
+                container.innerHTML = '';
+                
+                if (jobs.length === 0) {
+                    container.innerHTML = '<div class="dim-text mt-10">No open DVM jobs found on the network.</div>';
+                    return;
+                }
+                
+                jobs.forEach(job => {
+                    const card = document.createElement('div');
+                    card.className = 'note-card dvm-card';
+                    card.innerHTML = `
+                        <div class="note-header">
+                            <span class="note-author">JOB ID: ${job.id.substring(0,8)}...</span>
+                            <span class="dim-text code-font">${new Date(job.created_at * 1000).toLocaleString()}</span>
+                        </div>
+                        <div class="note-body" style="font-family: var(--font-mono); font-size: 11px;">
+                            <strong>Requester:</strong> ${job.pubkey.substring(0,8)}...<br>
+                            <strong>Payload Context:</strong> ${job.content || '(Empty payload)'}
+                        </div>
+                        <div class="flex-between mt-10" style="gap:10px;">
+                            <input type="number" id="bid-amt-${job.id}" class="main-input" placeholder="Bid Amount (sats)" value="10" style="flex:1;">
+                            <button class="btn btn-dvm" style="flex:2;" onclick="interceptDVMJob('${job.id}', '${job.pubkey}', '${job.content.replace(/'/g, "\\'")}')">INTERCEPT & BID</button>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+                logEvent("OK", "SYSTEM", `Found ${jobs.length} open DVM jobs (Kind 5050).`);
+            } catch(e) {
+                logEvent("ERROR", "SYSTEM", "DVM Scan failed: " + e.message);
+            } finally {
+                setBusy(false);
+            }
+        }
+
+        window.interceptDVMJob = async function(jobId, pubkey, content) {
+            if (!STATE.activeBotId) return alert("Select an Active Focus Target identity.");
+            const bidRaw = $(`bid-amt-${jobId}`).value;
+            const bidSats = parseInt(bidRaw, 10);
+            if (isNaN(bidSats) || bidSats <= 0) return alert("Enter a valid bid amount in sats.");
+            
+            const bot = STATE.bots[STATE.activeBotId];
+            const sk = getSecKeyBytes(bot.nsec);
+            if(!sk) return alert("Missing secret key for active identity.");
+            
+            setBusy(true, "GENERATING INVOICE & BID");
+            logEvent("DVM", STATE.activeBotId, `Intercepting Job ${jobId.substring(0,8)} for ${bidSats} sats...`);
+            
+            try {
+                await ensureWalletConnected();
+                if (!STATE.wallet.supportedMethods.includes('make_invoice')) throw new Error("Wallet not authorized for make_invoice.");
+                
+                const result = await executeWalletRequest("make_invoice", (client) =>
+                    client.makeInvoice({ amount: bidSats * 1000, description: `DVM Bid for Job ${jobId.substring(0,8)}` })
+                );
+                const bolt11 = result?.invoice;
+                if (!bolt11) throw new Error("Wallet returned empty invoice.");
+                
+                const eventTemplate = {
+                    kind: 7000,
+                    created_at: Math.floor(Date.now() / 1000),
+                    tags: [
+                        ['e', jobId],
+                        ['p', pubkey],
+                        ['status', 'payment-required'],
+                        ['amount', (bidSats * 1000).toString(), bolt11]
+                    ],
+                    content: "Payment required to process this job."
+                };
+                
+                const signedEvent = finalizeEvent(eventTemplate, sk);
+                await Promise.all(STATE.relays.map(r => STATE.pool.publish([r], signedEvent)));
+                
+                logEvent("OK", STATE.activeBotId, `Bid submitted with invoice! (Event: ${signedEvent.id.substring(0,8)})`);
+                
+                const pending = JSON.parse(localStorage.getItem('swarm_pending_dvm') || '[]');
+                pending.push({
+                    jobId: jobId,
+                    requester: pubkey,
+                    jobContent: content,
+                    bidSats: bidSats,
+                    bolt11: bolt11,
+                    timestamp: Date.now(),
+                    botId: STATE.activeBotId
+                });
+                localStorage.setItem('swarm_pending_dvm', JSON.stringify(pending));
+                renderPendingInvoices();
+                
+            } catch (e) {
+                logEvent("ERROR", STATE.activeBotId, "Bid failed: " + e.message);
+                alert("Bid failed: " + e.message);
+            } finally {
+                setBusy(false);
+            }
+        };
+
+        function renderPendingInvoices() {
+            const container = $('active-invoices-container');
+            if(!container) return;
+            const pending = JSON.parse(localStorage.getItem('swarm_pending_dvm') || '[]');
+            container.innerHTML = '';
+            
+            if (pending.length === 0) {
+                container.innerHTML = '<div class="dim-text mt-10">No active bids or pending invoices.</div>';
+                return;
+            }
+            
+            pending.forEach((inv, index) => {
+                const card = document.createElement('div');
+                card.className = 'note-card dvm-card';
+                card.innerHTML = `
+                    <div class="note-header">
+                        <span class="note-author">PENDING: Job ${inv.jobId.substring(0,8)}</span>
+                        <span class="dim-text code-font">${new Date(inv.timestamp).toLocaleString()}</span>
+                    </div>
+                    <div class="note-body" style="font-size: 12px; margin-bottom: 8px;">
+                        <strong>Bid Amount:</strong> ${inv.bidSats} sats<br>
+                        <strong>Assigned Node:</strong> ${inv.botId.toUpperCase()}<br>
+                        <strong>Invoice:</strong> <span class="code-font dim-text">${inv.bolt11.substring(0,25)}...</span>
+                    </div>
+                    <div class="action-row flex-between">
+                        <button class="btn btn-secondary" onclick="cancelPendingInvoice(${index})" style="padding: 4px 8px; font-size: 11px;">CANCEL</button>
+                        <button class="btn btn-dvm" onclick="completeDVMJob(${index})" style="padding: 4px 8px; font-size: 11px;">VERIFY PAYMENT & COMPLETE</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+        
+        window.cancelPendingInvoice = function(index) {
+            const pending = JSON.parse(localStorage.getItem('swarm_pending_dvm') || '[]');
+            pending.splice(index, 1);
+            localStorage.setItem('swarm_pending_dvm', JSON.stringify(pending));
+            renderPendingInvoices();
+        };
+
+        window.completeDVMJob = async function(index) {
+            const pending = JSON.parse(localStorage.getItem('swarm_pending_dvm') || '[]');
+            const inv = pending[index];
+            if (!inv) return;
+            
+            let isPaid = false;
+            try {
+                await ensureWalletConnected();
+                if (STATE.wallet.supportedMethods.includes('lookup_invoice')) {
+                    setBusy(true, "VERIFYING INVOICE PAYMENT");
+                    try {
+                         const result = await executeWalletRequest("lookup_invoice", (client) => 
+                             client.lookupInvoice({ invoice: inv.bolt11 })
+                         );
+                         if (result && result.settled_at) {
+                             isPaid = true;
+                         } else {
+                             alert("Invoice not yet paid according to wallet state.");
+                             setBusy(false);
+                             return;
+                         }
+                    } catch(e) {
+                         console.warn("lookup_invoice failed, falling back to manual confirmation:", e);
+                    }
+                }
+            } catch(e) {
+                console.warn("Wallet check error:", e);
+            }
+            
+            if (!isPaid) {
+                isPaid = confirm("Could not automatically verify payment via NWC.\n\nHas this invoice been paid by the requester? Click OK to forcefully process the job.");
+                if (!isPaid) {
+                    setBusy(false);
+                    return;
+                }
+            }
+            
+            setBusy(true, "PROCESSING DVM RESULT");
+            logEvent("DVM", inv.botId, `Processing Result for Job ${inv.jobId.substring(0,8)}...`);
+            
+            try {
+                const bot = STATE.bots[inv.botId];
+                if(!bot) throw new Error("Assigned node not found in roster.");
+                const sk = getSecKeyBytes(bot.nsec);
+                if(!sk) throw new Error("Assigned node missing secret key.");
+                
+                const p = buildSystemPrompt(bot);
+                const u = `A user has submitted a NIP-90 DVM Job request. Please process it and provide the output.\n\nJob Payload Context:\n${inv.jobContent}`;
+                const resultText = await generateAIContent(p, u);
+                
+                const eventTemplate = {
+                    kind: 6050,
+                    created_at: Math.floor(Date.now() / 1000),
+                    tags: [
+                        ['e', inv.jobId],
+                        ['p', inv.requester]
+                    ],
+                    content: resultText
+                };
+                
+                const signedEvent = finalizeEvent(eventTemplate, sk);
+                await Promise.all(STATE.relays.map(r => STATE.pool.publish([r], signedEvent)));
+                
+                logEvent("OK", inv.botId, `DVM Job ${inv.jobId.substring(0,8)} completed! Event: ${signedEvent.id.substring(0,8)}`);
+                
+                pending.splice(index, 1);
+                localStorage.setItem('swarm_pending_dvm', JSON.stringify(pending));
+                renderPendingInvoices();
+                
+            } catch(e) {
+                logEvent("ERROR", inv.botId, "Failed to complete job: " + e.message);
+                alert("Failed to complete job: " + e.message);
+            } finally {
+                setBusy(false);
+            }
+        };
+
+        // --- NIP-04 DIRECT MESSAGING INBOX ENGINE ---
+        function getPeerDisplayInfo(peerHex) {
+            for (const bid in STATE.bots) {
+                const sk = getSecKeyBytes(STATE.bots[bid].nsec);
+                if (sk && getPublicKey(sk) === peerHex) {
+                    const botName = STATE.bots[bid].displayName || bid.toUpperCase();
+                    return {
+                        name: botName,
+                        npub: nip19.npubEncode(peerHex),
+                        avatar: STATE.bots[bid].avatar || "",
+                        initials: botName.substring(0, 2).toUpperCase()
+                    };
+                }
+            }
+
+            const npub = nip19.npubEncode(peerHex);
+            const shortNpub = `${npub.substring(0, 8)}...${npub.substring(npub.length - 4)}`;
+            return {
+                name: shortNpub,
+                npub: npub,
+                avatar: "",
+                initials: peerHex.substring(0, 2).toUpperCase()
+            };
+        }
+
+        function updateDmDropdownOptions() {
+            const select = $('dm-recipient-select');
+            if (!select) return;
+            const currentVal = select.value;
+            select.innerHTML = '<option value="">Select identity...</option>';
+
+            const botGroup = document.createElement('optgroup');
+            botGroup.label = "Swarm Identities";
+            Object.keys(STATE.bots).forEach(bid => {
+                if (bid !== STATE.activeBotId) {
+                    const opt = document.createElement('option');
+                    opt.value = STATE.bots[bid].npub;
+                    opt.textContent = `${bid.toUpperCase()} (${STATE.bots[bid].displayName || 'Swarm Node'})`;
+                    botGroup.appendChild(opt);
+                }
+            });
+            if (botGroup.children.length > 0) select.appendChild(botGroup);
+
+            const threadGroup = document.createElement('optgroup');
+            threadGroup.label = "Existing DM Threads";
+            Object.keys(STATE.dmThreads).forEach(peerHex => {
+                const info = getPeerDisplayInfo(peerHex);
+                const opt = document.createElement('option');
+                opt.value = info.npub;
+                opt.textContent = info.name;
+                threadGroup.appendChild(opt);
+            });
+            if (threadGroup.children.length > 0) select.appendChild(threadGroup);
+
+            select.value = currentVal;
+        }
+
+        function renderDmInbox() {
+            const container = $('dm-conversations-list');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const peerHexes = Object.keys(STATE.dmThreads);
+            updateDmDropdownOptions();
+
+            if (peerHexes.length === 0) {
+                container.innerHTML = `<div class="dim-text" style="font-size: 11px; text-align: center; padding: 16px;">No conversation threads found for this identity.<br><br>Scan inbox or enter a recipient npub above to initiate messaging.</div>`;
+                return;
+            }
+
+            peerHexes.sort((a, b) => {
+                const lastA = STATE.dmThreads[a][STATE.dmThreads[a].length - 1]?.created_at || 0;
+                const lastB = STATE.dmThreads[b][STATE.dmThreads[b].length - 1]?.created_at || 0;
+                return lastB - lastA;
+            });
+
+            peerHexes.forEach(peerHex => {
+                const thread = STATE.dmThreads[peerHex];
+                const lastMsg = thread[thread.length - 1];
+                const peerInfo = getPeerDisplayInfo(peerHex);
+
+                const item = document.createElement('div');
+                item.className = `dm-conv-item ${STATE.activeDmPeer === peerHex ? 'active' : ''}`;
+                item.onclick = () => selectDmConversation(peerHex);
+
+                const timeStr = lastMsg ? new Date(lastMsg.created_at * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                const previewText = lastMsg ? (lastMsg.isOutgoing ? `You: ${lastMsg.content}` : lastMsg.content) : 'No messages';
+
+                item.innerHTML = `
+                    <div class="dm-conv-avatar">
+                        ${peerInfo.avatar ? `<img src="${peerInfo.avatar}" alt="Avatar">` : peerInfo.initials}
+                    </div>
+                    <div class="dm-conv-info">
+                        <div class="dm-conv-name">${peerInfo.name}</div>
+                        <div class="dm-conv-preview">${previewText.replace(/</g, '&lt;')}</div>
+                    </div>
+                    <div class="dm-conv-time">${timeStr}</div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function selectDmConversation(peerHex) {
+            if (!peerHex) return;
+            STATE.activeDmPeer = peerHex;
+
+            const peerInfo = getPeerDisplayInfo(peerHex);
+            $('dm-recipient-input').value = peerInfo.npub;
+
+            $('dm-active-peer-name').textContent = peerInfo.name;
+            $('dm-active-peer-npub').textContent = peerInfo.npub;
+            const avatarEl = $('dm-active-avatar');
+            if (peerInfo.avatar) {
+                avatarEl.innerHTML = `<img src="${peerInfo.avatar}" alt="Avatar">`;
+            } else {
+                avatarEl.textContent = peerInfo.initials;
+            }
+
+            renderDmInbox();
+
+            const chatContainer = $('dm-chat-container');
+            chatContainer.innerHTML = '';
+
+            const thread = STATE.dmThreads[peerHex] || [];
+            if (thread.length === 0) {
+                chatContainer.innerHTML = `<div class="dim-text mt-10" style="padding: 16px; text-align: center;">No encrypted messages in this conversation thread yet.<br>Compose a message below to start the conversation.</div>`;
+                return;
+            }
+
+            thread.forEach(msg => {
+                const bubble = document.createElement('div');
+                bubble.className = `dm-bubble ${msg.isOutgoing ? 'dm-outgoing' : 'dm-incoming'}`;
+                
+                const timeStr = new Date(msg.created_at * 1000).toLocaleString();
+                const senderLabel = msg.isOutgoing ? 'Active Focus Target (You)' : peerInfo.name;
+
+                bubble.innerHTML = `
+                    <div class="dm-meta">
+                        <span><strong>${senderLabel}</strong></span>
+                        <span>${timeStr}</span>
+                    </div>
+                    <div style="white-space: pre-wrap; font-size: 13px; color: var(--text);">${msg.content.replace(/</g, '&lt;')}</div>
+                `;
+                chatContainer.appendChild(bubble);
+            });
+
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function renderEmptyDmChat() {
+            STATE.activeDmPeer = null;
+            $('dm-active-peer-name').textContent = "NO THREAD SELECTED";
+            $('dm-active-peer-npub').textContent = "Select or enter a recipient npub to display messages";
+            $('dm-active-avatar').textContent = "?";
+            $('dm-chat-container').innerHTML = `<div class="dim-text mt-10" style="padding: 16px; text-align: center;">Select a conversation thread from the sidebar or enter an npub above to load NIP-04 encrypted messages.</div>`;
+        }
+
+        async function fetchDirectMessages(targetPeerHex = null) {
+            if (!STATE.activeBotId) return alert("Select an Active Focus Target identity.");
+
+            const bot = STATE.bots[STATE.activeBotId];
+            const sk = getSecKeyBytes(bot.nsec);
+            if (!sk) return alert("Invalid or missing secret key (nsec) for active identity.");
+
+            const botPubkey = getPublicKey(sk);
+            setBusy(true, "FETCHING DM TOPOLOGY...");
+            logEvent("DM", STATE.activeBotId, "Scanning network relays for NIP-04 encrypted messages...");
+
+            try {
+                const [incoming, outgoing] = await Promise.all([
+                    STATE.pool.querySync(STATE.relays, { kinds: [4], '#p': [botPubkey], limit: 100 }),
+                    STATE.pool.querySync(STATE.relays, { kinds: [4], authors: [botPubkey], limit: 100 })
+                ]);
+
+                const eventMap = new Map();
+                [...incoming, ...outgoing].forEach(ev => eventMap.set(ev.id, ev));
+                const allDmEvents = Array.from(eventMap.values()).sort((a, b) => a.created_at - b.created_at);
+
+                STATE.dmThreads = {};
+                
+                for (const ev of allDmEvents) {
+                    const isOutgoing = (ev.pubkey === botPubkey);
+                    const pTag = ev.tags.find(t => t[0] === 'p');
+                    const peerHex = isOutgoing ? (pTag ? pTag[1] : null) : ev.pubkey;
+
+                    if (!peerHex) continue;
+
+                    let decryptedText = "[Encrypted Payload]";
+                    try {
+                        decryptedText = await nip04.decrypt(sk, peerHex, ev.content);
+                    } catch (decErr) {
+                        decryptedText = "[Unable to decrypt message payload]";
+                    }
+
+                    if (!STATE.dmThreads[peerHex]) {
+                        STATE.dmThreads[peerHex] = [];
+                    }
+
+                    STATE.dmThreads[peerHex].push({
+                        id: ev.id,
+                        pubkey: ev.pubkey,
+                        recipient: pTag ? pTag[1] : null,
+                        created_at: ev.created_at,
+                        content: decryptedText,
+                        isOutgoing: isOutgoing
+                    });
+                }
+
+                logEvent("OK", STATE.activeBotId, `Retrieved ${allDmEvents.length} encrypted DM event(s).`);
+                renderDmInbox();
+
+                if (targetPeerHex) {
+                    selectDmConversation(targetPeerHex);
+                } else if (STATE.activeDmPeer && STATE.dmThreads[STATE.activeDmPeer]) {
+                    selectDmConversation(STATE.activeDmPeer);
+                } else {
+                    const threadPeers = Object.keys(STATE.dmThreads);
+                    if (threadPeers.length > 0) {
+                        selectDmConversation(threadPeers[0]);
+                    } else {
+                        renderEmptyDmChat();
+                    }
+                }
+
+            } catch (e) {
+                logEvent("ERROR", STATE.activeBotId, `Failed to retrieve DMs: ${e.message}`);
+                alert(`Error fetching DMs: ${e.message}`);
+            } finally {
+                setBusy(false);
+            }
+        }
+
+        async function sendDirectMessage() {
+            if (!STATE.activeBotId) return alert("Select an Active Focus Target identity.");
+            
+            const bot = STATE.bots[STATE.activeBotId];
+            const sk = getSecKeyBytes(bot.nsec);
+            if (!sk) return alert("Active identity missing secret key.");
+
+            let rawRecipient = $('dm-recipient-input').value.trim();
+            if (!rawRecipient && STATE.activeDmPeer) rawRecipient = STATE.activeDmPeer;
+
+            const recipientHex = getHexFromNpubOrHex(rawRecipient);
+            if (!recipientHex) return alert("Valid recipient npub or hex public key required.");
+
+            const payloadText = $('dm-compose-txt').value.trim();
+            if (!payloadText) return alert("Enter a message payload to send.");
+
+            setBusy(true, "ENCRYPTING & BROADCASTING DM...");
+            logEvent("DM", STATE.activeBotId, `Encrypting payload for recipient ${recipientHex.substring(0, 8)}...`);
+
+            try {
+                const encryptedContent = await nip04.encrypt(sk, recipientHex, payloadText);
+                const eventTemplate = {
+                    kind: 4,
+                    created_at: Math.floor(Date.now() / 1000),
+                    tags: [['p', recipientHex]],
+                    content: encryptedContent
+                };
+
+                const signedEvent = finalizeEvent(eventTemplate, sk);
+                await Promise.all(STATE.relays.map(r => STATE.pool.publish([r], signedEvent)));
+
+                logEvent("OK", STATE.activeBotId, `Encrypted DM published! ID: ${signedEvent.id.substring(0, 8)}`);
+
+                if (!STATE.dmThreads[recipientHex]) STATE.dmThreads[recipientHex] = [];
+                STATE.dmThreads[recipientHex].push({
+                    id: signedEvent.id,
+                    pubkey: signedEvent.pubkey,
+                    recipient: recipientHex,
+                    created_at: signedEvent.created_at,
+                    content: payloadText,
+                    isOutgoing: true
+                });
+
+                $('dm-compose-txt').value = '';
+                awardXP(STATE.activeBotId, signedEvent.id, 10);
+                selectDmConversation(recipientHex);
+
+            } catch (e) {
+                logEvent("ERROR", STATE.activeBotId, `Failed to send DM: ${e.message}`);
+                alert(`Error transmitting DM: ${e.message}`);
+            } finally {
+                setBusy(false);
+            }
+        }
+
+        async function synthesizeDirectMessage() {
+            if (!STATE.activeBotId) return alert("Select an Active Focus Target identity.");
+            let rawRecipient = $('dm-recipient-input').value.trim();
+            if (!rawRecipient && STATE.activeDmPeer) rawRecipient = STATE.activeDmPeer;
+
+            const recipientHex = getHexFromNpubOrHex(rawRecipient);
+            if (!recipientHex) return alert("Specify a recipient npub or select a thread first.");
+
+            setBusy(true, "SYNTHESIZING DM...");
+            try {
+                const peerInfo = getPeerDisplayInfo(recipientHex);
+                const thread = STATE.dmThreads[recipientHex] || [];
+                const lastMessages = thread.slice(-5).map(m => `${m.isOutgoing ? 'You' : peerInfo.name}: ${m.content}`).join('\n');
+
+                const systemPrompt = buildSystemPrompt(STATE.bots[STATE.activeBotId]);
+                const userPrompt = `SYNTHESIZE A DIRECT MESSAGE REPLY TO ${peerInfo.name}:\n\nRecent Conversation History:\n${lastMessages || '(No prior message history)'}\n\nCompose a private, confidential direct message payload matching your persona. DO NOT wrap in quotes.`;
+
+                const synthesizedText = await generateAIContent(systemPrompt, userPrompt);
+                $('dm-compose-txt').value = synthesizedText;
+                logEvent("INFO", STATE.activeBotId, "Confidential DM payload synthesized.");
+            } catch (e) {
+                alert("DM synthesis failed: " + e.message);
+                logEvent("ERROR", STATE.activeBotId, e.message);
+            } finally {
+                setBusy(false);
+            }
+        }
+
+        // --- CORE EVENT FUNCTIONS ---
+        async function broadcastNote() {
+            if (!STATE.activeBotId) return alert("Select an Identity.");
+            const txt = $('compose-txt').value.trim();
+            if (!txt) return alert("Empty payload.");
+            const bot = STATE.bots[STATE.activeBotId];
+            const sk = getSecKeyBytes(bot.nsec);
+            if (!sk) return alert("Invalid nsec.");
+            
+            setBusy(true, "BROADCASTING...");
+            try {
+                const eventTemplate = {
+                    kind: 1,
+                    created_at: Math.floor(Date.now() / 1000),
+                    tags: [],
+                    content: txt
+                };
+                const signedEvent = finalizeEvent(eventTemplate, sk);
+                await Promise.all(STATE.relays.map(r => STATE.pool.publish([r], signedEvent)));
+                logEvent("OK", STATE.activeBotId, `Published event: ${signedEvent.id.substring(0,8)}`);
+                $('compose-txt').value = '';
+                awardXP(STATE.activeBotId, signedEvent.id, 5);
+            } catch(e) {
+                logEvent("ERROR", STATE.activeBotId, e.message);
+            } finally {
+                setBusy(false);
+            }
+        }
+
+        async function sendReply() {
+            if (!STATE.activeBotId) return alert("Select an Identity.");
+            const txt = $('reply-txt').value.trim();
+            let targetHex = $('reply-id-ent').value.trim();
+            if (!txt || !targetHex) return alert("Missing payload or target ID.");
+            if (targetHex.startsWith('note1')) {
+                try { targetHex = nip19.decode(targetHex).data; } 
+                catch(e) { return alert("Invalid note1 identifier."); }
+            }
+
+            const bot = STATE.bots[STATE.activeBotId];
+            const sk = getSecKeyBytes(bot.nsec);
+            if (!sk) return alert("Invalid nsec.");
+
+            setBusy(true, "TRANSMITTING REPLY...");
+            try {
+                const eventTemplate = {
+                    kind: 1,
+                    created_at: Math.floor(Date.now() / 1000),
+                    tags: [['e', targetHex, "", "reply"]],
+                    content: txt
+                };
+                const signedEvent = finalizeEvent(eventTemplate, sk);
+                await Promise.all(STATE.relays.map(r => STATE.pool.publish([r], signedEvent)));
+                logEvent("OK", STATE.activeBotId, `Reply transmitted: ${signedEvent.id.substring(0,8)}`);
+                STATE.repliedEvents[targetHex] = true;
+                $('reply-txt').value = '';
+                awardXP(STATE.activeBotId, signedEvent.id, 10);
+            } catch(e) {
+                logEvent("ERROR", STATE.activeBotId, e.message);
+            } finally {
+                setBusy(false);
+            }
+        }
+
+        async function fetchGlobalFeed() {
+            setBusy(true, "SCANNING TOPOLOGY...");
+            const limit = parseInt($('feed-limit-var').value) || 15;
+            try {
+                const events = await STATE.pool.querySync(STATE.relays, { kinds: [1], limit: limit });
+                const container = $('feed-container');
+                container.innerHTML = '';
+                events.forEach(ev => {
+                    const card = document.createElement('div');
+                    card.className = 'note-card';
+                    card.innerHTML = `
+                        <div class="note-header">
+                            <span class="note-author">${ev.pubkey.substring(0,8)}...</span>
+                            <span class="dim-text">${new Date(ev.created_at * 1000).toLocaleString()}</span>
+                        </div>
+                        <div class="note-body">${ev.content.replace(/</g, '&lt;')}</div>
+                        <button class="btn btn-secondary" onclick="document.getElementById('reply-id-ent').value='${ev.id}'; document.querySelector('[data-tab=\\'tab-reply\\']').click();" style="font-size:11px; padding: 4px 8px;">TARGET REPLY</button>
+                    `;
+                    container.appendChild(card);
+                });
+                logEvent("INFO", "SYSTEM", `Global feed scanned. Retrieved ${events.length} events.`);
+            } catch(e) {
+                logEvent("ERROR", "SYSTEM", e.message);
+            } finally {
+                setBusy(false);
+            }
+        }
+
+        async function checkMentions() {
+            if (!STATE.activeBotId) return alert("Select an Identity.");
+            const bot = STATE.bots[STATE.activeBotId];
+            const sk = getSecKeyBytes(bot.nsec);
+            if (!sk) return;
+            const pubkey = getPublicKey(sk);
+            
+            setBusy(true, "FETCHING MENTIONS...");
+            try {
+                const events = await STATE.pool.querySync(STATE.relays, { kinds: [1], '#p': [pubkey], limit: 10 });
+                const container = $('mentions-container');
+                container.innerHTML = '';
+                if(events.length === 0) container.innerHTML = '<div class="dim-text mt-10">No recent mentions found for active focus target.</div>';
+                
+                events.forEach(ev => {
+                    const card = document.createElement('div');
+                    card.className = 'note-card';
+                    card.innerHTML = `
+                        <div class="note-header">
+                            <span class="note-author">${ev.pubkey.substring(0,8)}...</span>
+                            <span class="dim-text">${new Date(ev.created_at * 1000).toLocaleString()}</span>
+                        </div>
+                        <div class="note-body">${ev.content.replace(/</g, '&lt;')}</div>
+                        <button class="btn btn-secondary" onclick="document.getElementById('reply-id-ent').value='${ev.id}'; document.querySelector('[data-tab=\\'tab-reply\\']').click();" style="font-size:11px; padding: 4px 8px;">TARGET REPLY</button>
+                    `;
+                    container.appendChild(card);
+                });
+                logEvent("INFO", STATE.activeBotId, `Mentions checked. Retrieved ${events.length} events.`);
+            } catch(e) {
+                logEvent("ERROR", STATE.activeBotId, e.message);
+            } finally {
+                setBusy(false);
+            }
+        }
+
+        async function broadcastProfileMetadata() {
+            if (!STATE.activeBotId) return alert("Select an Identity.");
+            const bot = STATE.bots[STATE.activeBotId];
+            const sk = getSecKeyBytes(bot.nsec);
+            if (!sk) return alert("Invalid nsec.");
+            
+            const meta = {
+                name: bot.displayName || STATE.activeBotId,
+                about: bot.persona,
+                picture: bot.avatar || ""
+            };
+            
+            setBusy(true, "BROADCASTING METADATA...");
+            try {
+                const eventTemplate = {
+                    kind: 0,
+                    created_at: Math.floor(Date.now() / 1000),
+                    tags: [],
+                    content: JSON.stringify(meta)
+                };
+                const signedEvent = finalizeEvent(eventTemplate, sk);
+                await Promise.all(STATE.relays.map(r => STATE.pool.publish([r], signedEvent)));
+                logEvent("OK", STATE.activeBotId, `Metadata (Kind 0) broadcast complete.`);
+            } catch(e) {
+                logEvent("ERROR", STATE.activeBotId, e.message);
+            } finally {
+                setBusy(false);
+            }
+        }
+
+        // --- STATE & ROSTER MANAGEMENT ---
+        function renderBotRoster() {
+            const list = $('bot-list');
+            list.innerHTML = '';
+            const search = $('bot-search').value.toLowerCase();
+            
+            Object.keys(STATE.bots).forEach(bid => {
+                if (search && !bid.toLowerCase().includes(search)) return;
+                const b = STATE.bots[bid];
+                
+                const card = document.createElement('div');
+                card.className = `bot-card ${STATE.activeBotId === bid ? 'selected' : ''}`;
+                card.onclick = () => {
+                    STATE.activeBotId = bid;
+                    $('active-bot-display').textContent = bid.toUpperCase();
+                    renderBotRoster();
+                };
+                
+                const avatarUrl = b.avatar || "";
+                const initials = (b.displayName || bid).substring(0, 2).toUpperCase();
+                
+                card.innerHTML = `
+                    <div class="bot-card-flex">
+                        <div class="bot-avatar-container">
+                            ${avatarUrl ? `<img src="${avatarUrl}" class="bot-avatar-img" alt="avatar">` : initials}
+                        </div>
+                        <div class="bot-card-body">
+                            <div class="bot-header">
+                                <span class="bot-id">${b.displayName || bid}</span>
+                                <button class="bot-del-icon" onclick="event.stopPropagation(); window.removeBot('${bid}')" title="Terminate Identity">×</button>
+                            </div>
+                            <div class="bot-stats">LVL ${getBotLevel(b.xp)} | ${b.xp || 0} XP</div>
+                            <div class="bot-chars">${b.persona ? b.persona.substring(0, 40) + '...' : ''}</div>
+                            <div class="bot-npub">${b.npub.substring(0, 15)}...</div>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+            $('manage-bots-txt').value = JSON.stringify(STATE.bots, null, 2);
+        }
+
+        function saveBots() {
+            localStorage.setItem('swarm_bots', JSON.stringify(STATE.bots));
+        }
+
+        function loadBots() {
+            try {
+                const stored = localStorage.getItem('swarm_bots');
+                if (stored) {
+                    STATE.bots = JSON.parse(stored);
+                    renderBotRoster();
+                    updatePersonaSelectDropdown();
+                }
+            } catch(e) { console.error("Failed to load bots:", e); }
+        }
+
+        function updatePersonaSelectDropdown() {
+            const sel = $('persona-select');
+            sel.innerHTML = '<option value="">-- Create New Identity --</option>';
+            Object.keys(STATE.bots).forEach(bid => {
+                sel.innerHTML += `<option value="${bid}">${bid.toUpperCase()}</option>`;
+            });
+        }
+
+        function populatePersonaForm(bid) {
+            if (!bid || !STATE.bots[bid]) {
+                $('persona-id-input').value = '';
+                $('persona-nsec-input').value = '';
+                $('persona-trait-input').value = '';
+                $('persona-gender-input').value = '';
+                $('persona-age-input').value = '';
+                $('persona-type-input').value = '';
+                $('persona-iq-input').value = '';
+                $('persona-avatar-input').value = '';
+                $('persona-chars-input').value = '';
+                return;
+            }
+            const b = STATE.bots[bid];
+            $('persona-id-input').value = bid;
+            $('persona-nsec-input').value = b.nsec || '';
+            $('persona-avatar-input').value = b.avatar || '';
+            $('persona-chars-input').value = b.characters || '';
+            
+            const parts = (b.persona || "").split(', ');
+            $('persona-trait-input').value = parts[0] || '';
+            $('persona-gender-input').value = parts[1] || '';
+            $('persona-age-input').value = parts[2] || '';
+            $('persona-type-input').value = parts[3] || '';
+            $('persona-iq-input').value = parts[4] || '';
+        }
+
+        function savePersonaFromForm() {
+            const bid = $('persona-id-input').value.trim();
+            if (!bid) return alert("Identity Handle is required.");
+            
+            const nsec = $('persona-nsec-input').value.trim();
+            let npub = "";
+            try {
+                const sk = getSecKeyBytes(nsec);
+                if (!sk) throw new Error("Invalid NSEC");
+                npub = nip19.npubEncode(getPublicKey(sk));
+            } catch(e) { return alert("Invalid Secret Key (NSEC)."); }
+
+            const trait = $('persona-trait-input').value.trim();
+            const gender = $('persona-gender-input').value.trim();
+            const age = $('persona-age-input').value.trim();
+            const type = $('persona-type-input').value.trim();
+            const iq = $('persona-iq-input').value.trim();
+            const avatar = $('persona-avatar-input').value.trim();
+            const chars = $('persona-chars-input').value.trim();
+
+            const pStr = [trait, gender, age, type, iq].filter(Boolean).join(', ');
+            
+            const xp = STATE.bots[bid] ? STATE.bots[bid].xp : 0;
+
+            STATE.bots[bid] = {
+                displayName: bid,
+                nsec: nsec,
+                npub: npub,
+                persona: pStr,
+                characters: chars,
+                avatar: avatar,
+                xp: xp
+            };
+
+            saveBots();
+            renderBotRoster();
+            updatePersonaSelectDropdown();
+            alert(`Persona [${bid}] saved successfully.`);
+        }
+
+        async function fetchMetadataForBots() {
+            setBusy(true, "SYNCING METADATA...");
+            const pubkeys = [];
+            Object.keys(STATE.bots).forEach(bid => {
+                const sk = getSecKeyBytes(STATE.bots[bid].nsec);
+                if (sk) pubkeys.push(getPublicKey(sk));
+            });
+            if (pubkeys.length === 0) { setBusy(false); return; }
+
+            try {
+                const events = await STATE.pool.querySync(STATE.relays, { kinds: [0], authors: pubkeys, limit: pubkeys.length * 2 });
+                events.forEach(ev => {
+                    try {
+                        const meta = JSON.parse(ev.content);
+                        Object.keys(STATE.bots).forEach(bid => {
+                            const sk = getSecKeyBytes(STATE.bots[bid].nsec);
+                            if (sk && getPublicKey(sk) === ev.pubkey) {
+                                if (meta.picture) STATE.bots[bid].avatar = meta.picture;
+                                if (meta.name) STATE.bots[bid].displayName = meta.name;
+                            }
+                        });
+                    } catch(e) {}
+                });
+                saveBots();
+                renderBotRoster();
+                logEvent("INFO", "SYSTEM", "Avatar and Metadata Sync Complete.");
+            } catch(e) {
+                logEvent("ERROR", "SYSTEM", e.message);
+            } finally {
+                setBusy(false);
+            }
+        }
+
+        // --- EVENT LISTENERS INITIALIZATION ---
         function setupEventListeners() {
             setupTabs();
+            
+            $('bot-search').oninput = renderBotRoster;
+            
             $('btn-post').onclick = broadcastNote;
             $('btn-reply').onclick = sendReply;
             $('btn-fetch-feed').onclick = fetchGlobalFeed;
             $('btn-check-mentions').onclick = checkMentions;
             $('btn-scan-dvm').onclick = fetchDVMJobs;
+            $('btn-sync-meta').onclick = fetchMetadataForBots;
+
+            // Direct Messaging Listeners
+            $('btn-fetch-dms').onclick = () => fetchDirectMessages();
+            $('btn-send-dm').onclick = sendDirectMessage;
+            $('btn-ai-dm').onclick = synthesizeDirectMessage;
+            $('btn-start-dm-thread').onclick = () => {
+                const raw = $('dm-recipient-input').value.trim();
+                const hex = getHexFromNpubOrHex(raw);
+                if (!hex) return alert("Please enter a valid recipient npub or 64-hex public key.");
+                if (!STATE.dmThreads[hex]) STATE.dmThreads[hex] = [];
+                selectDmConversation(hex);
+            };
+            $('btn-copy-peer-npub').onclick = () => {
+                const npub = $('dm-active-peer-npub').textContent;
+                if (npub && npub.startsWith('npub1')) {
+                    navigator.clipboard.writeText(npub);
+                    logEvent("INFO", "SYSTEM", "Recipient npub copied to clipboard.");
+                }
+            };
+            $('dm-recipient-select').onchange = (e) => {
+                if (e.target.value) {
+                    const hex = getHexFromNpubOrHex(e.target.value);
+                    $('dm-recipient-input').value = e.target.value;
+                    if (hex) {
+                        if (!STATE.dmThreads[hex]) STATE.dmThreads[hex] = [];
+                        selectDmConversation(hex);
+                    }
+                }
+            };
             
             // LLM Settings Setup
             $('btn-save-api').onclick = () => {
@@ -1144,680 +2379,147 @@
                 setBusy(false);
             };
 
-            // Identity Generation
-            $('btn-generate-bot').onclick = () => {
-                const bid = "bot_" + (Object.keys(STATE.bots).length + 1) + "_" + Math.floor(Math.random()*1000);
-                STATE.bots[bid] = generateNewBotObj();
-                saveBots(); renderBotRoster();
-                $('manage-bots-txt').value = JSON.stringify(STATE.bots, null, 2);
-                logEvent("INFO", "SYSTEM", `Provisioned generic identity: ${bid}`);
+            // Persona Builder Controls
+            $('persona-select').onchange = (e) => populatePersonaForm(e.target.value);
+            $('btn-save-persona-form').onclick = savePersonaFromForm;
+            $('btn-new-persona-form').onclick = () => populatePersonaForm("");
+            $('btn-persona-gen-nsec').onclick = () => {
+                const sk = generateSecretKey();
+                $('persona-nsec-input').value = nip19.nsecEncode(sk);
             };
-
-            $('btn-generate-ai-bot').onclick = async () => {
-                setBusy(true, "SYNTHESIZING IDENTITY...");
-                try {
-                    const u = "Generate a JSON array containing one object with 'persona' and 'characters' keys. Create a highly unique, deeply specific esoteric or professional AI persona description (comma separated stats for persona, e.g. 'cynical, ai, 0, analyst, iq:140'). Characters is a 1-2 sentence background.";
-                    const p = "You are a data generator. Output raw JSON only. No markdown, no comments.";
-                    const txt = await generateAIContent(p, u);
-                    const parsed = JSON.parse(txt.replace(/```json/g,'').replace(/```/g,'').trim());
-                    
-                    const bid = "bot_" + (Object.keys(STATE.bots).length + 1) + "_" + Math.floor(Math.random()*1000);
-                    const botObj = generateNewBotObj();
-                    botObj.persona = parsed[0]?.persona || parsed.persona;
-                    botObj.characters = parsed[0]?.characters || parsed.characters;
-                    STATE.bots[bid] = botObj;
-                    
-                    saveBots(); renderBotRoster();
-                    $('manage-bots-txt').value = JSON.stringify(STATE.bots, null, 2);
-                    logEvent("INFO", "SYSTEM", `Synthesized new identity: ${bid}`);
-                } catch(e) { alert("Synthesis failed: " + e.message); logEvent("ERROR", "SYSTEM", e.message); }
-                setBusy(false);
+            $('btn-delete-persona-form').onclick = () => {
+                const bid = $('persona-id-input').value.trim();
+                if (bid && STATE.bots[bid]) window.removeBot(bid);
             };
-
-            // Utilities
-            $('btn-clear-compose').onclick = () => { $('compose-txt').value = ''; $('char-count-lbl').textContent = '0 bytes'; };
-            $('compose-txt').oninput = (e) => $('char-count-lbl').textContent = `${e.target.value.length} bytes`;
-            $('btn-clear-reply').onclick = () => $('reply-txt').value = '';
-            $('btn-clear-history').onclick = () => { if(confirm("Purge local telemetry archive?")) { STATE.publishedHistory = []; saveHistory(); renderHistory(); } };
-            $('btn-clear-log').onclick = () => $('event-log').innerHTML = '';
-            $('theme-selector').onchange = (e) => { document.body.className = e.target.value; localStorage.setItem('swarm_theme', e.target.value); };
-            $('bot-search').oninput = (e) => renderBotRoster(e.target.value.trim().toLowerCase());
+            $('btn-broadcast-meta').onclick = broadcastProfileMetadata;
             
-            $('btn-save-prompts').onclick = () => {
-                STATE.autoPilot.basePrompt = $('prompt-base-txt').value.trim();
-                STATE.autoPilot.directive = $('prompt-directive-txt').value.trim();
-                STATE.autoPilot.dvmEnabled = $('chk-dvm-auto').checked;
-                saveAutoSettings();
-                logEvent("INFO", "SYSTEM", "Prompt and Autopilot parameters secured.");
+            $('btn-ai-persona-form').onclick = async () => {
+                setBusy(true, "SYNTHESIZING PERSONA...");
+                try {
+                    const u = "Generate a single JSON object with the following string keys: 'id' (bot_name, lowercase, no spaces), 'role' (primary trait), 'gender', 'age', 'type', 'iq', and 'chars' (detailed backstory). Return ONLY valid JSON.";
+                    const txt = await generateAIContent(buildSystemPrompt({persona: "System Administrator", characters: ""}), u);
+                    const cleanTxt = txt.replace(/```json/g, '').replace(/```/g, '').trim();
+                    const data = JSON.parse(cleanTxt);
+                    
+                    $('persona-id-input').value = data.id || '';
+                    $('persona-trait-input').value = data.role || '';
+                    $('persona-gender-input').value = data.gender || '';
+                    $('persona-age-input').value = data.age || '';
+                    $('persona-type-input').value = data.type || '';
+                    $('persona-iq-input').value = data.iq || '';
+                    $('persona-chars-input').value = data.chars || '';
+                    
+                    logEvent("INFO", "SYSTEM", "Persona synthesized via AI.");
+                } catch(e) {
+                    alert("AI Synthesis failed: " + e.message);
+                    logEvent("ERROR", "SYSTEM", e.message);
+                } finally {
+                    setBusy(false);
+                }
             };
-
+            
+            // Raw JSON Manifest Controls
+            $('btn-generate-bot').onclick = () => {
+                const newId = 'bot_' + Math.floor(Math.random()*10000);
+                STATE.bots[newId] = generateNewBotObj();
+                saveBots();
+                renderBotRoster();
+                logEvent("INFO", "SYSTEM", `Identity ${newId} provisioned.`);
+            };
             $('btn-save-bots').onclick = () => {
                 try {
                     STATE.bots = JSON.parse($('manage-bots-txt').value);
-                    saveBots(); renderBotRoster();
-                    logEvent("INFO", "SYSTEM", "Identity manifest successfully applied.");
-                } catch(e) { alert("Invalid JSON manifest."); }
+                    saveBots();
+                    renderBotRoster();
+                    updatePersonaSelectDropdown();
+                    logEvent("INFO", "SYSTEM", "Raw JSON manifest applied successfully.");
+                } catch(e) { alert("Invalid JSON"); }
             };
-            $('btn-export-bots').onclick = () => { $('manage-bots-txt').value = JSON.stringify(STATE.bots, null, 2); logEvent("INFO", "SYSTEM", "Identity manifest exported to buffer."); };
+            $('btn-export-bots').onclick = () => {
+                $('manage-bots-txt').value = JSON.stringify(STATE.bots, null, 2);
+                alert("JSON Manifest updated in text area. Copy it to securely export your identities.");
+            };
 
-            // Wallet
+            // Wallet Config
             $('btn-wallet-save').onclick = () => {
                 STATE.wallet.nwcUrl = $('wallet-nwc-url').value.trim();
-                localStorage.setItem('swarm_wallet_nwc_url', STATE.wallet.nwcUrl);
-                logEvent("INFO", "WALLET", "NWC string saved to local storage.");
+                localStorage.setItem('swarm_nwc_url', STATE.wallet.nwcUrl);
+                logEvent("INFO", "SYSTEM", "NWC connection string saved to local storage.");
             };
-            $('btn-wallet-connect').onclick = () => { ensureWalletConnected(true).catch(e => alert(formatWalletError(e))); };
-            $('btn-wallet-disconnect').onclick = () => {
-                resetWalletConnection();
-                $('wallet-nwc-url').value = ''; STATE.wallet.nwcUrl = ''; localStorage.removeItem('swarm_wallet_nwc_url');
-                logEvent("INFO", "WALLET", "Wallet disconnected.");
+            $('btn-wallet-connect').onclick = async () => {
+                try { 
+                    await ensureWalletConnected(true); 
+                    alert("Wallet connected successfully!");
+                } catch (e) { 
+                    alert("Connection failed: " + e.message); 
+                }
             };
             $('btn-wallet-balance').onclick = checkWalletBalance;
             $('btn-wallet-invoice').onclick = createWalletInvoice;
-            $('btn-wallet-copy-invoice').onclick = () => { navigator.clipboard.writeText($('wallet-invoice-output').value); logEvent("INFO", "SYSTEM", "Invoice copied to clipboard."); };
-
-            // Relay
-            $('btn-add-relay').onclick = () => {
-                const r = $('relay-add-ent').value.trim();
-                if(r && !STATE.relays.includes(r)) { STATE.relays.push(r); renderRelays(); logEvent("INFO", "SYSTEM", `Relay added: ${r}`); }
+            $('btn-wallet-disconnect').onclick = () => {
+                resetWalletConnection();
+                STATE.wallet.nwcUrl = '';
+                $('wallet-nwc-url').value = '';
+                localStorage.removeItem('swarm_nwc_url');
+                logEvent("INFO", "SYSTEM", "Wallet disconnected and string cleared.");
             };
-            $('btn-remove-relay').onclick = () => {
-                const sel = $('relay-listbox').value;
-                if(sel) { STATE.relays = STATE.relays.filter(r => r !== sel); renderRelays(); logEvent("INFO", "SYSTEM", `Relay removed: ${sel}`); }
+            $('btn-wallet-copy-invoice').onclick = () => {
+                navigator.clipboard.writeText($('wallet-invoice-output').value);
+                logEvent("INFO", "SYSTEM", "Bolt11 copied to clipboard.");
             };
 
-            // Autopilot Timers
-            $('btn-auto-start').onclick = () => toggleAutopilot(true);
-            $('btn-auto-stop').onclick = () => toggleAutopilot(false);
-            $('auto-interval-sel').onchange = (e) => {
-                STATE.autoPilot.intervalMs = parseInt(e.target.value);
-                saveAutoSettings();
-                if(STATE.autoPilot.enabled) toggleAutopilot(true); 
+            // UI Elements
+            $('compose-txt').oninput = (e) => $('char-count-lbl').textContent = `${e.target.value.length} bytes`;
+            $('btn-clear-compose').onclick = () => { $('compose-txt').value = ''; $('char-count-lbl').textContent = '0 bytes'; };
+            $('btn-clear-reply').onclick = () => $('reply-txt').value = '';
+            $('btn-clear-log').onclick = () => $('event-log').innerHTML = '';
+            
+            // Theme Selector
+            $('theme-selector').onchange = (e) => {
+                document.body.className = e.target.value;
+                localStorage.setItem('swarm_theme', e.target.value);
             };
         }
 
-        function toggleAutopilot(enable) {
-            STATE.autoPilot.enabled = enable;
-            saveAutoSettings();
-            
-            const badge = $('auto-status-badge');
-            if (enable) {
-                badge.textContent = "ACTIVE";
-                badge.className = "status-badge badge-on";
-                logEvent("INFO", "SYSTEM", `Autopilot engaged. Interval: ${STATE.autoPilot.intervalMs}ms`);
-                if(STATE.autoPilot.timerId) clearInterval(STATE.autoPilot.timerId);
-                runAutonomousTick();
-                STATE.autoPilot.timerId = setInterval(runAutonomousTick, STATE.autoPilot.intervalMs);
-            } else {
-                badge.textContent = "SUSPENDED";
-                badge.className = "status-badge badge-off";
-                if(STATE.autoPilot.timerId) { clearInterval(STATE.autoPilot.timerId); STATE.autoPilot.timerId = null; }
-                logEvent("INFO", "SYSTEM", "Autopilot suspended.");
-            }
-        }
-
-        async function runAutonomousTick() {
-            if (!STATE.autoPilot.enabled) return;
-            const botIds = Object.keys(STATE.bots);
-            if(botIds.length === 0) return;
-            
-            const botId = botIds[Math.floor(Math.random() * botIds.length)];
-            const bot = STATE.bots[botId];
-            const sk = getSecKeyBytes(bot.nsec);
-            if (!sk) return;
-            
-            const pubkey = getPublicKey(sk);
-            const systemPrompt = buildSystemPrompt(bot);
-            
-            logEvent("INFO", botId, `[AUTOPILOT TICK] Initiating autonomous execution loop...`);
-
-            try {
-                // Priority 1: Mentions & Reply Interception
-                let events = await STATE.pool.querySync(STATE.relays, { kinds: [1], '#p': [pubkey], limit: 20 });
-                events.sort((a, b) => b.created_at - a.created_at);
-                
-                let unrepliedMentions = events.filter(e => {
-                    const noteId = nip19.noteEncode(e.id);
-                    return e.pubkey !== pubkey && !STATE.repliedEvents[noteId] && !STATE.repliedEvents[e.id];
-                });
-
-                if (unrepliedMentions.length > 0) {
-                    const target = unrepliedMentions[0];
-                    logEvent("INFO", botId, `[AUTOPILOT] Priority 1: Intercepting mention ${target.id.substring(0, 8)}...`);
-                    const userPrompt = `RESPOND TO THIS MENTION:\n\nUser Message: "${target.content}"\n\nProvide an in-character reply. DO NOT wrap in quotes.`;
-                    const replyText = await generateAIContent(systemPrompt, userPrompt);
-                    
-                    if (replyText) {
-                        const noteId = await publishNote(botId, stripUrls(replyText), target.id, target.pubkey, target.content);
-                        awardXP(botId, target.id, 10);
-                        logEvent("OK", botId, `[AUTOPILOT] Mention resolved successfully. Tx: ${noteId}`);
-                        return; // Exit early
-                    }
-                }
-
-                // Priority 1.5: DVM Jobs (If enabled)
-                if (STATE.autoPilot.dvmEnabled) {
-                    let dvmEvents = await STATE.pool.querySync(STATE.relays, { kinds: [5050], limit: 5 });
-                    let unrepliedDvm = dvmEvents.filter(e => !STATE.repliedEvents[e.id]).sort((a, b) => b.created_at - a.created_at);
-                    if (unrepliedDvm.length > 0) {
-                        const target = unrepliedDvm[0];
-                        logEvent("INFO", botId, `[AUTOPILOT] Auto-Intercepting DVM Job ${target.id.substring(0, 8)}...`);
-                        await processDVMEvent(target, botId, null);
-                        return;
-                    }
-                }
-
-                // Priority 2: Baseline Fallback Strategy
-                logEvent("INFO", botId, `[AUTOPILOT] Priority 2: Executing fallback probability matrix...`);
-                const rand = Math.random();
-                if (rand < 0.3) {
-                    logEvent("INFO", botId, `[AUTOPILOT] Triggered 30% Standalone Post synthesis...`);
-                    const userPrompt = `Generate a standalone status update based on your persona. DO NOT wrap in quotes. Avoid hashtags.`;
-                    const postText = await generateAIContent(systemPrompt, userPrompt);
-                    if (postText) {
-                        const noteId = await publishNote(botId, stripUrls(postText));
-                        awardXP(botId, 'post_' + noteId, 5); 
-                        logEvent("OK", botId, `[AUTOPILOT] Standalone post deployed. Tx: ${noteId}`);
-                    }
-                } else {
-                    logEvent("INFO", botId, `[AUTOPILOT] Triggered 70% Reply network scan...`);
-                    let feed = await STATE.pool.querySync(STATE.relays, { kinds: [1], limit: 40 });
-                    feed.sort((a, b) => b.created_at - a.created_at);
-                    
-                    const botPubkeys = new Set(Object.values(STATE.bots).map(b => { 
-                        const k = getSecKeyBytes(b.nsec); return k ? getPublicKey(k) : null; 
-                    }).filter(Boolean));
-                    
-                    let viableTargets = feed.filter(e => {
-                        const noteId = nip19.noteEncode(e.id);
-                        return !botPubkeys.has(e.pubkey) && !STATE.repliedEvents[noteId] && !STATE.repliedEvents[e.id] && !e.tags.some(t => t[0] === 'e') && e.content.length < 250;
-                    });
-
-                    if (viableTargets.length > 0) {
-                        const target = viableTargets[Math.floor(Math.random() * viableTargets.length)];
-                        logEvent("INFO", botId, `[AUTOPILOT] Intercepting network node ${target.id.substring(0,8)}...`);
-                        
-                        const userPrompt = `REPLY TO THIS NETWORK EVENT:\n\nMessage: "${target.content}"\n\nProvide an in-character reply. Keep it relevant to their statement. DO NOT wrap in quotes.`;
-                        const replyText = await generateAIContent(systemPrompt, userPrompt);
-                        if (replyText) {
-                            const noteId = await publishNote(botId, stripUrls(replyText), target.id, target.pubkey, target.content);
-                            awardXP(botId, target.id, 10);
-                            logEvent("OK", botId, `[AUTOPILOT] Threaded reply deployed. Tx: ${noteId}`);
-                        }
-                    } else {
-                        logEvent("INFO", botId, `[AUTOPILOT] No viable targets found in standard limits. Idling...`);
-                    }
-                }
-            } catch (err) {
-                logEvent("ERROR", botId, `[AUTOPILOT] Execution cycle failed: ${err.message}`);
-            }
-        }
-
-        function initApp() {
-            loadPersistence();
+        // --- APP INITIALIZATION ---
+        window.onload = () => {
             setupEventListeners();
-            renderRelays();
-            renderBotRoster();
-            renderHistory();
+            loadBots();
+            renderPendingInvoices();
             
-            if ($('manage-bots-txt').value.trim() === '') $('manage-bots-txt').value = JSON.stringify(STATE.bots, null, 2);
-            $('prompt-base-txt').value = STATE.autoPilot.basePrompt;
-            $('prompt-directive-txt').value = STATE.autoPilot.directive;
-            $('auto-interval-sel').value = STATE.autoPilot.intervalMs.toString();
-            $('chk-dvm-auto').checked = STATE.autoPilot.dvmEnabled;
-            
-            updateWalletStatusUI();
-            logEvent("INFO", "SYSTEM", `Manager UI initialized. ${Object.keys(STATE.bots).length} distinct identities online.`);
-        }
-
-        window.addEventListener('beforeunload', () => { if (STATE.wallet.client) { try { STATE.wallet.client.close(); } catch (e) { } } });
-
-        function loadPersistence() {
-            const savedTheme = localStorage.getItem('swarm_theme');
-            if (savedTheme) { document.body.className = savedTheme; $('theme-selector').value = savedTheme; }
-
-            const savedApiKey = localStorage.getItem('swarm_api_key');
-            if (savedApiKey) { STATE.apiKey = savedApiKey; $('api-key-ent').value = savedApiKey; }
-            
-            const savedProvider = localStorage.getItem('swarm_llm_provider');
-            if (savedProvider) { STATE.llmProvider = savedProvider; $('llm-provider-sel').value = savedProvider; }
-
-            const savedProxy = localStorage.getItem('swarm_api_proxy');
-            if (savedProxy) { STATE.proxyUrl = savedProxy; $('api-proxy-ent').value = savedProxy; }
-
-            const savedNwcUrl = localStorage.getItem('swarm_wallet_nwc_url');
-            if (savedNwcUrl) { STATE.wallet.nwcUrl = savedNwcUrl; $('wallet-nwc-url').value = savedNwcUrl; }
-            
-            const savedRelays = localStorage.getItem('swarm_relays');
-            if (savedRelays) STATE.relays = JSON.parse(savedRelays);
-            
-            const savedBots = localStorage.getItem('swarm_bots');
-            if (savedBots) { try { STATE.bots = JSON.parse(savedBots); } catch(e){} } 
-            
-            if (Object.keys(STATE.bots).length === 0) { STATE.bots = { "bot_1": generateNewBotObj() }; saveBots(); }
-
-            const savedReplied = localStorage.getItem('swarm_replied');
-            if (savedReplied) { try { STATE.repliedEvents = JSON.parse(savedReplied); } catch(e){} }
-            $('replied-lbl').textContent = `Cache: ${Object.keys(STATE.repliedEvents).length} events`;
-
-            const savedXpTracked = localStorage.getItem('swarm_xp_tracked');
-            if (savedXpTracked) { try { STATE.xpTrackedEvents = JSON.parse(savedXpTracked); } catch(e){} }
-
-            const savedHistory = localStorage.getItem('swarm_history');
-            if (savedHistory) { try { STATE.publishedHistory = JSON.parse(savedHistory); } catch(e){} }
-
-            const savedAuto = localStorage.getItem('swarm_auto_settings');
-            if(savedAuto) {
-                try {
-                    const parsed = JSON.parse(savedAuto);
-                    STATE.autoPilot.basePrompt = parsed.basePrompt || STATE.autoPilot.basePrompt;
-                    STATE.autoPilot.directive = parsed.directive || "";
-                    STATE.autoPilot.intervalMs = parsed.intervalMs || 300000;
-                    STATE.autoPilot.dvmEnabled = parsed.dvmEnabled || false;
-                } catch(e){}
+            // Restore local storage state
+            const storedKey = localStorage.getItem('swarm_api_key');
+            if (storedKey) {
+                STATE.apiKey = storedKey;
+                $('api-key-ent').value = storedKey;
             }
-        }
-
-        function saveBots() { localStorage.setItem('swarm_bots', JSON.stringify(STATE.bots)); }
-        function saveHistory() { localStorage.setItem('swarm_history', JSON.stringify(STATE.publishedHistory)); }
-        function saveAutoSettings() {
-            localStorage.setItem('swarm_auto_settings', JSON.stringify({
-                basePrompt: STATE.autoPilot.basePrompt,
-                directive: STATE.autoPilot.directive,
-                intervalMs: STATE.autoPilot.intervalMs,
-                dvmEnabled: STATE.autoPilot.dvmEnabled
-            }));
-        }
-
-        function markReplied(eventId, botId) {
-            STATE.repliedEvents[eventId] = botId;
-            const keys = Object.keys(STATE.repliedEvents);
-            if (keys.length > 1500) delete STATE.repliedEvents[keys[0]]; 
-            localStorage.setItem('swarm_replied', JSON.stringify(STATE.repliedEvents));
-            $('replied-lbl').textContent = `Cache: ${Object.keys(STATE.repliedEvents).length} events`;
-        }
-
-        function renderBotRoster(filterText = "") {
-            const list = $('bot-list'); list.innerHTML = "";
-            Object.keys(STATE.bots).sort((a,b) => (parseInt(a.split('_')[1] || 0) - parseInt(b.split('_')[1] || 0))).forEach(bid => {
-                const bot = STATE.bots[bid];
-                const personaStr = (bot.persona || "").toLowerCase();
-                if (filterText && !bid.toLowerCase().includes(filterText) && !personaStr.includes(filterText)) return;
-                
-                const parts = (bot.persona || "").split('—');
-                const stats = parts[0] ? parts[0].trim() : "";
-                const chars = bot.characters || (parts[1] ? parts[1].trim() : "");
-                const bits = stats.split(',').map(s => s.trim());
-                const trait = bits[0] || ""; const gender = bits[1] || ""; const age = bits[2] || "";
-                const ptype = (bits[3] || "").replace("sort of ", ""); const iq = (bits[4] || "").replace("iq:", "");
-                
-                let npub = bot.npub;
-                if (!npub && bot.nsec) { const sk = getSecKeyBytes(bot.nsec); if (sk) npub = nip19.npubEncode(getPublicKey(sk)); }
-                
-                const botXp = bot.xp || 0;
-                const botLvl = getBotLevel(botXp);
-                
-                const card = document.createElement('div');
-                card.className = `bot-card ${STATE.activeBotId === bid ? 'selected' : ''}`;
-                card.onclick = () => selectBot(bid);
-                card.innerHTML = `
-                    <div class="bot-header">
-                        <span class="bot-id">${bid.replace('_', ' ')} <span style="font-size: 11px; margin-left: 6px; padding: 2px 5px; background: var(--accent); color: var(--bg); border-radius: 4px;">LVL ${botLvl}</span></span>
-                        <div>
-                            <span style="font-size: 10px; border: 1px solid var(--accent); padding: 2px 6px; border-radius: 4px; color: var(--accent); margin-right: 8px;" title="${botXp} XP">IQ:${iq}</span>
-                            <button class="bot-del-icon" title="Remove Identity" onclick="removeBot('${bid}'); event.stopPropagation();">✕</button>
-                        </div>
-                    </div>
-                    <div class="bot-stats">${trait} ${gender}, ${age} | ${ptype}</div>
-                    ${chars ? `<div class="bot-chars">"${chars.length > 80 ? chars.substring(0,80)+'…' : chars}"</div>` : ''}
-                    <div class="bot-npub">${npub ? npub.substring(0, 24) + "..." : "Invalid nsec"}</div>
-                `;
-                list.appendChild(card);
-            });
-        }
-
-        function selectBot(bid) {
-            STATE.activeBotId = bid;
-            renderBotRoster($('bot-search').value.trim().toLowerCase());
-            const trait = STATE.bots[bid].persona ? STATE.bots[bid].persona.split(',')[0].trim() : "";
-            $('active-bot-display').textContent = `[ ${bid.replace('_', ' ').toUpperCase()} ] ${trait}`;
-        }
-
-        function renderRelays() {
-            const lb = $('relay-listbox'); lb.innerHTML = "";
-            STATE.relays.forEach(r => { const opt = document.createElement('option'); opt.value = r; opt.text = r; lb.appendChild(opt); });
-            localStorage.setItem('swarm_relays', JSON.stringify(STATE.relays));
-        }
-
-        function renderHistory() {
-            const container = $('history-container');
-            if(!container) return;
-            container.innerHTML = "";
-            if (STATE.publishedHistory.length === 0) {
-                container.innerHTML = `<div class="dim-text mt-10" style="padding: 16px; text-align: center; border: 1px dashed var(--border); border-radius: 6px;">Telemetry archive empty. No outbound signals recorded.</div>`;
-                return;
+            const storedProvider = localStorage.getItem('swarm_llm_provider');
+            if (storedProvider) {
+                STATE.llmProvider = storedProvider;
+                $('llm-provider-sel').value = storedProvider;
             }
-            STATE.publishedHistory.forEach(item => {
-                const ts = new Date(item.timestamp * 1000).toLocaleString('en-US', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'});
-                const el = document.createElement('div'); el.className = 'note-card';
-                let contextHtml = '';
-                if (item.type === 'REPLY' || item.type === 'DVM_RESULT' || item.type === 'DVM_FEEDBACK') {
-                    const parentText = item.parentContent ? item.parentContent.replace(/</g,'&lt;') : "Original context payload unavailable or untracked.";
-                    contextHtml = `
-                        <div class="history-parent-quote">
-                            <span class="dim-text" style="font-size: 11px; text-transform: uppercase; font-weight: 600;">↳ Parent Context Hex: ${item.parentHex.substring(0,16)}...</span>
-                            <span class="parent-text">"${parentText}"</span>
-                        </div>
-                    `;
-                }
-                el.innerHTML = `
-                    <div class="note-header">
-                        <span style="color: var(--text); font-weight: 700; font-size: 14px; text-transform: uppercase;">[ ${item.botId.replace('_', ' ')} ]</span>
-                        <span class="log-tag tag-${item.type}" style="margin-right: auto; margin-left: 12px;">${item.type}</span>
-                        <span class="dim-text">${ts}</span>
-                    </div>
-                    ${contextHtml}
-                    <div class="note-body">${item.content.replace(/</g,'&lt;')}</div>
-                    <div class="flex-between" style="border-top: 1px solid var(--border); padding-top: 12px;">
-                        <span class="dim-text" style="font-size:11px; font-family: var(--font-mono);">ID: ${item.id}</span>
-                        <a href="https://njump.me/${item.id}" target="_blank" class="btn btn-secondary" style="padding: 4px 10px; font-size: 11px; text-decoration: none;">VERIFY EXTERNALLY ↗</a>
-                    </div>
-                `;
-                container.appendChild(el);
-            });
-        }
-
-        async function publishNote(botId, content, parentHex = null, parentPubkey = null, parentContent = null, eventKind = 1, extraTags = []) {
-            const bot = STATE.bots[botId];
-            const sk = getSecKeyBytes(bot.nsec);
-            if (!sk) throw new Error("Invalid cryptographic key configuration.");
-            
-            let tags = [];
-            if (parentHex && parentPubkey) { tags.push(["e", parentHex, "", "reply"]); tags.push(["p", parentPubkey]); }
-            if (eventKind === 6050) tags.push(["status", "success"]);
-            if (extraTags && extraTags.length > 0) tags.push(...extraTags);
-
-            const evtTemplate = { kind: eventKind, created_at: Math.floor(Date.now()/1000), tags, content };
-            const signedEvent = finalizeEvent(evtTemplate, sk);
-            await Promise.any(STATE.pool.publish(STATE.relays, signedEvent));
-            
-            const noteId = nip19.noteEncode(signedEvent.id);
-            markReplied(noteId, botId);
-            if(parentHex) markReplied(parentHex, botId);
-            
-            let type = 'POST';
-            if(eventKind === 6050) type = 'DVM_RESULT';
-            else if(eventKind === 7000) type = 'DVM_FEEDBACK';
-            else if(parentHex) type = 'REPLY';
-
-            STATE.publishedHistory.unshift({ id: noteId, hex: signedEvent.id, botId: botId, content: content, parentHex: parentHex, parentContent: parentContent, timestamp: signedEvent.created_at, type: type });
-            if (STATE.publishedHistory.length > 500) STATE.publishedHistory.pop();
-            saveHistory(); renderHistory();
-            return noteId;
-        }
-
-        async function broadcastNote() {
-            if (!STATE.activeBotId) return alert("Focus Target not selected.");
-            const content = stripUrls($('compose-txt').value);
-            if (!content) return alert("Payload buffer empty.");
-            setBusy(true, "TRANSMITTING");
-            logEvent("POST", STATE.activeBotId, `Tx Payload: ${content.substring(0,60)}...`);
-            try {
-                const noteId = await publishNote(STATE.activeBotId, content);
-                logEvent("OK", STATE.activeBotId, `Broadcast confirmed. Node ID: ${noteId}`);
-                logEvent("LINK", STATE.activeBotId, `https://njump.me/${noteId}`);
-                $('compose-txt').value = ""; $('char-count-lbl').textContent = "0 bytes";
-            } catch(err) { logEvent("ERROR", STATE.activeBotId, `Tx failed: ${err.message}`); }
-            setBusy(false);
-        }
-
-        async function sendReply() {
-            if (!STATE.activeBotId) return alert("Focus Target not selected.");
-            let replyIdRaw = $('reply-id-ent').value.trim();
-            if (!replyIdRaw) return alert("Specify Target Event ID.");
-            
-            let parentHex = replyIdRaw;
-            try { if (replyIdRaw.startsWith('note1')) parentHex = nip19.decode(replyIdRaw).data; } catch(e) { return alert("Invalid Node ID format."); }
-
-            if (STATE.repliedEvents[replyIdRaw] || STATE.repliedEvents[parentHex]) {
-                if (!confirm("System Warning: Event currently resides in Cache Memory. Transmit duplicate response?")) return;
+            const storedProxy = localStorage.getItem('swarm_api_proxy');
+            if (storedProxy) {
+                STATE.proxyUrl = storedProxy;
+                $('api-proxy-ent').value = storedProxy;
+            }
+            const storedNwc = localStorage.getItem('swarm_nwc_url');
+            if (storedNwc) {
+                STATE.wallet.nwcUrl = storedNwc;
+                $('wallet-nwc-url').value = storedNwc;
+            }
+            const storedTheme = localStorage.getItem('swarm_theme');
+            if (storedTheme) {
+                document.body.className = storedTheme;
+                $('theme-selector').value = storedTheme;
             }
 
-            const content = stripUrls($('reply-txt').value);
-            if (!content) return alert("Payload buffer empty.");
-            setBusy(true, "TRANSMITTING REPLY");
-            logEvent("REPLY", STATE.activeBotId, `Targeting: ${replyIdRaw.substring(0,12)}...`);
-            try {
-                const parentEvt = await STATE.pool.get(STATE.relays, { ids: [parentHex] });
-                if (!parentEvt) throw new Error("Target node unresolvable on current relay topology.");
-                const noteId = await publishNote(STATE.activeBotId, content, parentHex, parentEvt.pubkey, parentEvt.content);
-                markReplied(replyIdRaw, STATE.activeBotId);
-                logEvent("OK", STATE.activeBotId, `Reply successfully transmitted. ID: ${noteId}`);
-                logEvent("LINK", STATE.activeBotId, `https://njump.me/${noteId}`);
-                $('reply-id-ent').value = ""; $('reply-txt').value = ""; 
-                const ctxLbl = $('reply-ctx-lbl'); ctxLbl.textContent = ""; ctxLbl.style.display = "none";
-            } catch(err) { logEvent("ERROR", STATE.activeBotId, `Tx failed: ${err.message}`); }
-            setBusy(false);
-        }
+            // Populate Relay List UI
+            const rList = $('relay-listbox');
+            STATE.relays.forEach(r => rList.innerHTML += `<option>${r}</option>`);
 
-        function renderNotesList(containerId, events) {
-            const container = $(containerId);
-            container.innerHTML = "";
-            if (events.length === 0) {
-                container.innerHTML = `<div class="dim-text mt-10" style="padding: 16px; text-align: center; border: 1px dashed var(--border); border-radius: 6px;">No nodes resolved for current parameters.</div>`;
-                return;
-            }
-            events.forEach(e => {
-                const ts = new Date(e.created_at * 1000).toLocaleString('en-US', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
-                const el = document.createElement('div');
-                el.className = 'note-card';
-                el.innerHTML = `
-                    <div class="note-header">
-                        <span class="note-author">${nip19.npubEncode(e.pubkey).substring(0, 16)}...</span>
-                        <span class="dim-text">${ts}</span>
-                    </div>
-                    <div class="note-body">${e.content.replace(/</g,'&lt;')}</div>
-                    <div class="flex-between">
-                        <span class="dim-text" style="font-size:11px;">Hex: ${e.id.substring(0,16)}...</span>
-                        <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 11px;" onclick="document.getElementById('reply-id-ent').value='${e.id}'; document.querySelector('[data-tab=\\'tab-reply\\']').click();">TARGET ↳</button>
-                    </div>
-                `;
-                container.appendChild(el);
-            });
-        }
-
-        async function fetchGlobalFeed() {
-            const limit = parseInt($('feed-limit-var').value) || 15;
-            setBusy(true, "SCANNING TOPOLOGY");
-            logEvent("READ", "SYSTEM", `Analyzing global network channels... limit: ${limit}`);
-            try {
-                const botPubkeys = new Set();
-                Object.values(STATE.bots).forEach(b => { const sk = getSecKeyBytes(b.nsec); if (sk) botPubkeys.add(getPublicKey(sk)); });
-                
-                let events = await STATE.pool.querySync(STATE.relays, { kinds: [1], limit: limit + 100 });
-                events.sort((a,b) => b.created_at - a.created_at); 
-                
-                let filtered = events.filter(e => {
-                    const noteId = nip19.noteEncode(e.id);
-                    return !botPubkeys.has(e.pubkey) && !STATE.repliedEvents[noteId] && !STATE.repliedEvents[e.id] && !e.tags.some(t => t[0] === 'e'); 
-                }).slice(0, limit);
-                
-                renderNotesList('feed-container', filtered);
-                logEvent("OK", "SYSTEM", `Successfully acquired ${filtered.length} viable targets.`);
-            } catch(err) { logEvent("ERROR", "SYSTEM", `Topology scan failure: ${err.message}`); }
-            setBusy(false);
-        }
-
-        async function checkMentions() {
-            if (!STATE.activeBotId) return alert("Focus Target not selected.");
-            const sk = getSecKeyBytes(STATE.bots[STATE.activeBotId].nsec);
-            if (!sk) return;
-            setBusy(true, "FETCHING MENTIONS");
-            logEvent("MENTIONS", STATE.activeBotId, `Querying network mentions...`);
-            try {
-               let events = await STATE.pool.querySync(STATE.relays, { kinds: [1], '#p': [getPublicKey(sk)], limit: 20 });
-                events.sort((a,b) => b.created_at - a.created_at);
-                
-                let xpGained = false;
-                events.forEach(e => { if (e.pubkey !== getPublicKey(sk) && awardXP(STATE.activeBotId, e.id, 10)) xpGained = true; });
-                if (xpGained) renderBotRoster();
-
-                let filtered = events.filter(e => !STATE.repliedEvents[nip19.noteEncode(e.id)] && !STATE.repliedEvents[e.id]);
-                renderNotesList('mentions-container', filtered);
-                logEvent("OK", STATE.activeBotId, `Identified ${filtered.length} pending engagement nodes.`);
-            } catch(err) { logEvent("ERROR", STATE.activeBotId, `Query failure: ${err.message}`); }
-            setBusy(false);
-        }
-
-        async function fetchDVMJobs() {
-            setBusy(true, "SCANNING DVM QUEUE");
-            logEvent("DVM", "SYSTEM", `Scanning network for Open Kind 5050 Jobs...`);
-            try {
-                let events = await STATE.pool.querySync(STATE.relays, { kinds: [5050], limit: 20 });
-                events.sort((a,b) => b.created_at - a.created_at);
-                let filtered = events.filter(e => !STATE.repliedEvents[e.id]);
-                
-                const container = $('dvm-container'); container.innerHTML = "";
-                if (filtered.length === 0) {
-                    container.innerHTML = `<div class="dim-text mt-10" style="padding: 16px; text-align: center; border: 1px dashed var(--border); border-radius: 6px;">No Open DVM Tasks identified on current relays.</div>`;
-                } else {
-                    filtered.forEach(e => {
-                        const ts = new Date(e.created_at * 1000).toLocaleString('en-US', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
-                        let amountParams = e.tags.find(t => t[0] === 'amount');
-                        let bidParams = e.tags.find(t => t[0] === 'bid');
-                        let paymentStr = 'UNSPECIFIED / FREE'; let isPaid = false;
-
-                        if (amountParams && amountParams.length > 1) { paymentStr = `AMOUNT: ${amountParams[1]} msats`; isPaid = true; } 
-                        else if (bidParams && bidParams.length > 1) { paymentStr = `BID: ${bidParams[1]} msats${bidParams[2] ? ` (Max: ${bidParams[2]})` : ''}`; isPaid = true; } 
-                        else {
-                            let pAmount = e.tags.find(t => t[0] === 'param' && t[1] === 'amount');
-                            let pBid = e.tags.find(t => t[0] === 'param' && t[1] === 'bid');
-                            if (pAmount && pAmount.length > 2) { paymentStr = `AMOUNT: ${pAmount[2]} msats`; isPaid = true; } 
-                            else if (pBid && pBid.length > 2) { paymentStr = `BID: ${pBid[2]} msats`; isPaid = true; }
-                        }
-
-                        let iTags = e.tags.filter(t => t[0] === 'i');
-                        let pTags = e.tags.filter(t => t[0] === 'param');
-                        let inputHtml = iTags.map(t => {
-                            let type = t[2] || 'text';
-                            return `<div style="margin-bottom: 6px;"><strong style="color: var(--accent);">[Input | ${type.toUpperCase()}]</strong><br><span style="word-break: break-all;">${t[1].replace(/</g,'&lt;')}</span></div>`;
-                        }).join('');
-                        let paramHtml = pTags.map(t => `<div style="margin-bottom: 4px;"><strong style="color: var(--dim);">[Param | ${t[1]}]</strong> ${t[2] ? t[2].replace(/</g,'&lt;') : ''}</div>`).join('');
-                        let contentHtml = '';
-                        if (e.content && e.content.trim() !== '') contentHtml = `<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);"><strong style="color: var(--dim);">[Payload Content]</strong><br><span style="word-break: break-word;">${e.content.replace(/</g,'&lt;')}</span></div>`;
-
-                        const el = document.createElement('div'); el.className = 'note-card dvm-card';
-                        el.innerHTML = `
-                            <div class="note-header">
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <span class="dvm-text font-weight-700">JOB: TEXT SYNTHESIS (5050)</span>
-                                    <span class="log-tag ${isPaid ? 'tag-DVM' : 'tag-INFO'}" style="margin: 0; padding: 4px 8px; font-size: 11px;">${paymentStr}</span>
-                                </div>
-                                <span class="dim-text">${ts}</span>
-                            </div>
-                            <div class="note-body" style="font-family: var(--font-mono); font-size: 12px; background: var(--bg); padding: 12px; border-radius: 4px; max-height: 250px; overflow-y: auto;">
-                                ${inputHtml} ${paramHtml} ${contentHtml}
-                                ${(!inputHtml && !contentHtml && !paramHtml) ? '<span class="dim-text italic">No standardized job payload data found.</span>' : ''}
-                            </div>
-                            <div class="dvm-status-area"></div>
-                            <div class="flex-between mt-10">
-                                <div><button class="btn btn-dvm dvm-exec-btn" style="padding:6px 12px; font-size:11px; font-weight: 700;">REQUEST PAYMENT & EXECUTE</button></div>
-                                <span class="dim-text" style="font-size:11px;">Hex: ${e.id.substring(0,16)}...</span>
-                            </div>
-                        `;
-                        
-                        el.querySelector('.dvm-exec-btn').onclick = (evt) => {
-                            const btn = evt.target; btn.disabled = true; btn.textContent = "EXECUTING MODULE...";
-                            executeDVMJobManual(e, el.querySelector('.dvm-status-area'));
-                        };
-                        container.appendChild(el);
-                    });
-                }
-                logEvent("OK", "SYSTEM", `Identified ${filtered.length} open NIP-90 job requests.`);
-            } catch(err) { logEvent("ERROR", "SYSTEM", `DVM Query failure: ${err.message}`); }
-            setBusy(false);
-        }
-
-        async function executeDVMJobManual(jobEvent, statusArea) {
-            if (!STATE.activeBotId) return alert("Focus Target not selected. Select a bot to execute the job.");
-            if(confirm(`Intercept NIP-90 Job Request (Hex: ${jobEvent.id.substring(0,8)}) and generate invoice?`)) {
-                await processDVMEvent(jobEvent, STATE.activeBotId, statusArea);
-            }
-        }
-
-        async function processDVMEvent(jobEvent, botId, statusArea) {
-            const bot = STATE.bots[botId];
-            logEvent("DVM", botId, `Intercepting Kind 5050 Job: ${jobEvent.id.substring(0,12)}...`);
-            
-            if (statusArea) {
-                statusArea.classList.add("active");
-                statusArea.innerHTML = `<span class="dim-text">Validating Input Data Payload...</span>`;
-            }
-            
-            try {
-                // 1. EXTRACT NIP-90 INPUT DATA
-                const iTags = jobEvent.tags.filter(t => t[0] === 'i');
-                if (iTags.length === 0) throw new Error("NULL_INPUT_ERROR: Malformed Kind 5050 Event. No 'i' (input) tags found.");
-
-                let jobInputText = "";
-                for (const tag of iTags) {
-                    const data = tag[1]; const type = tag[2] || 'text';
-                    if (type === 'text') jobInputText += data + "\n";
-                    else if (type === 'event') {
-                        logEvent("DVM", botId, `Resolving parent event reference: ${data.substring(0,12)}...`);
-                        try {
-                            const resolvedEvent = await STATE.pool.get(STATE.relays, { ids: [data] });
-                            if (!resolvedEvent || !resolvedEvent.content) throw new Error(`Relay connections failed to fetch event text content for ${data}`);
-                            jobInputText += resolvedEvent.content + "\n";
-                        } catch (err) { throw new Error(`NULL_INPUT_ERROR: Unresolvable Event Reference. ${err.message}`); }
-                    }
-                }
-                const finalInput = jobInputText.trim() || jobEvent.content.trim();
-                if (!finalInput) throw new Error("NULL_INPUT_ERROR: Final resolved input content is empty.");
-
-                // 2. PAYMENT / INVOICE GENERATION
-                if (statusArea) statusArea.innerHTML = `<span class="dim-text">Calculating Job Quote & Interfacing with Payment Engine...</span>`;
-                let amountMsats = 50000; // default 50 sats if no bid is present
-                const bidTag = jobEvent.tags.find(t => t[0] === 'bid' || (t[0] === 'param' && t[1] === 'bid'));
-                if (bidTag && bidTag[0] === 'bid' && bidTag[1]) amountMsats = parseInt(bidTag[1]);
-
-                let invoiceStr = null;
-                if (STATE.wallet.connected && STATE.wallet.supportedMethods.includes('make_invoice')) {
-                    if (statusArea) statusArea.innerHTML = `<span class="dim-text">Requesting Lightning Invoice for ${amountMsats / 1000} sats...</span>`;
-                    logEvent("DVM", botId, `Generating ${amountMsats / 1000} sat NWC Invoice...`);
-                    const invRes = await executeWalletRequest("make_invoice", (c) => c.makeInvoice({ amount: amountMsats, description: `DVM 5050 Job Execution: ${jobEvent.id.substring(0,8)}` }));
-                    invoiceStr = invRes.invoice;
-                }
-
-                // 3. BROADCAST FEEDBACK (7000)
-                if (statusArea) statusArea.innerHTML = `<span class="dim-text">Broadcasting Kind 7000 Feedback Acknowledgment...</span>`;
-                let feedbackTags = [["e", jobEvent.id], ["p", jobEvent.pubkey], ["status", "payment-required"]];
-                if (invoiceStr) feedbackTags.push(["amount", amountMsats.toString(), invoiceStr]);
-                await publishNote(botId, "Acknowledged job. Payment required.", null, null, null, 7000, feedbackTags);
-                logEvent("OK", botId, `Kind 7000 Feedback published for Job ${jobEvent.id.substring(0,8)}.`);
-
-                // 4. SYNTHESIZE VIA LLM
-                if (statusArea) statusArea.innerHTML = `<span class="dim-text">Executing AI Synthesis Task via Configured LLM...</span>`;
-                const systemPrompt = buildSystemPrompt(bot);
-                const userPrompt = `EXECUTE DVM SYNTHESIS JOB.\nInput Data Payload:\n"""\n${finalInput}\n"""\nProcess this data strictly according to your persona constraints. Output only the final resulting text.`;
-                const aiResult = await generateAIContent(systemPrompt, userPrompt);
-                
-                // 5. DEPLOY RESULT (6050)
-                if (statusArea) statusArea.innerHTML = `<span class="dim-text">Deploying Final Kind 6050 Result Structure...</span>`;
-                const resultTags = [["request", JSON.stringify(jobEvent)], ["e", jobEvent.id], ["p", jobEvent.pubkey]];
-                const resultNoteId = await publishNote(botId, aiResult, null, null, jobEvent.content, 6050, resultTags);
-                
-                awardXP(botId, jobEvent.id, 25);
-                logEvent("OK", botId, `DVM Job ${jobEvent.id.substring(0,8)} Executed. Result Tx: ${resultNoteId}`);
-                if (statusArea) statusArea.innerHTML = `<span class="accent-text" style="font-weight:700;">JOB COMPLETED SUCCESSFULLY. ID: ${resultNoteId}</span>`;
-
-            } catch (err) {
-                logEvent("ERROR", botId, `DVM Execution Failed: ${err.message}`);
-                if (statusArea) statusArea.innerHTML = `<span class="error-text" style="font-weight:700;">EXECUTION HALTED: ${err.message}</span>`;
-            }
-        }
-
-        document.addEventListener("DOMContentLoaded", initApp);
+            logEvent("INFO", "SYSTEM", "Initialization complete. Awaiting directives.");
+        };
     </script>
 </body>
 </html>
